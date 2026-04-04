@@ -1,0 +1,1023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Explore – Astrophiles</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <style>
+    :root {
+      --bg:#05080f; --fg:#e8edf5; --muted:#7a8599;
+      --accent:#f3d13b; --accent-glow:rgba(243,209,59,0.3); --accent-dim:rgba(243,209,59,0.08);
+      --card:rgba(12,18,32,0.82); --border:rgba(122,133,153,0.18);
+      --error:#ff4757; --success:#2ed573; --cyan:#00e5ff;
+      --arena:#a855f7; --arena-glow:rgba(168,85,247,0.35); --arena-dim:rgba(168,85,247,0.1);
+      --sidebar-w:220px; --friends-w:280px;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;}
+    #starfield{position:fixed;inset:0;z-index:0;pointer-events:none;}
+    .nebula{position:fixed;border-radius:50%;filter:blur(90px);opacity:0.1;pointer-events:none;z-index:0;animation:drift 22s ease-in-out infinite alternate;}
+    .nebula-1{width:500px;height:500px;background:radial-gradient(circle,#f3d13b,transparent 70%);top:-150px;left:-100px;}
+    .nebula-2{width:400px;height:400px;background:radial-gradient(circle,#00e5ff,transparent 70%);bottom:-80px;right:-80px;animation-delay:-9s;}
+    .nebula-3{width:300px;height:300px;background:radial-gradient(circle,#e040fb,transparent 70%);top:40%;left:60%;animation-delay:-18s;}
+    @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(25px,18px) scale(1.06)}}
+    .grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;
+      background-image:linear-gradient(rgba(243,209,59,0.025) 1px,transparent 1px),
+                        linear-gradient(90deg,rgba(243,209,59,0.025) 1px,transparent 1px);
+      background-size:60px 60px;}
+    .app-shell{position:relative;z-index:1;display:flex;min-height:100vh;}
+
+    /* ── SIDENAV ── */
+    .sidenav{width:var(--sidebar-w);flex-shrink:0;position:fixed;top:0;left:0;height:100vh;display:flex;flex-direction:column;padding:1.25rem 0.75rem;border-right:1px solid var(--border);background:rgba(5,8,15,0.7);backdrop-filter:blur(20px);z-index:1000;transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);}
+    .sidenav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:8px;padding:0.3rem 0.5rem 1.4rem;border-bottom:1px solid var(--border);margin-bottom:0.75rem;}
+    .sidenav-logo-mark{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),#d4851a);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:#05080f;flex-shrink:0;}
+    .nav-section-label{font-size:0.6rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:var(--muted);padding:0 0.6rem;margin:0.75rem 0 0.3rem;}
+    .nav-item{display:flex;align-items:center;gap:10px;padding:0.6rem 0.7rem;border-radius:10px;font-size:0.88rem;font-weight:500;color:var(--muted);text-decoration:none;cursor:pointer;transition:all 0.18s;border:1px solid transparent;background:transparent;width:100%;text-align:left;font-family:'DM Sans',sans-serif;}
+    .nav-item svg{width:16px;height:16px;flex-shrink:0;}
+    .nav-item:hover{color:var(--fg);background:rgba(255,255,255,0.04);border-color:var(--border);}
+    .nav-item.active{color:var(--accent);background:var(--accent-dim);border-color:rgba(243,209,59,0.2);font-weight:600;}
+    .nav-item.arena-item{color:var(--arena);}
+    .nav-item.arena-item:hover{background:var(--arena-dim);border-color:rgba(168,85,247,0.3);}
+    .nav-spacer{flex:1;}
+    .nav-user-card{display:flex;align-items:center;gap:8px;padding:0.65rem 0.7rem;border-radius:11px;border:1px solid var(--border);background:rgba(12,18,32,0.6);text-decoration:none;transition:all 0.2s;cursor:pointer;}
+    .nav-user-card:hover{border-color:rgba(243,209,59,0.3);}
+    .nav-user-avatar{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:1px solid rgba(243,209,59,0.3);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;color:var(--accent);flex-shrink:0;}
+    .nav-user-info{min-width:0;flex:1;}
+    .nav-user-name{font-size:0.8rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .nav-user-pts{font-size:0.65rem;color:var(--muted);}
+    .nav-user-pts span{color:var(--accent);font-weight:600;}
+    .nav-post-btn{display:flex;align-items:center;justify-content:center;gap:6px;padding:0.6rem;border-radius:10px;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-size:0.82rem;font-weight:700;font-family:'Syne',sans-serif;text-decoration:none;border:none;cursor:pointer;transition:all 0.2s;margin-bottom:0.5rem;}
+    .nav-post-btn:hover{transform:translateY(-1px);box-shadow:0 5px 14px var(--accent-glow);}
+    .nav-post-btn svg{width:13px;height:13px;}
+
+    /* ── MAIN — centered between sidebars ── */
+    .main-content{
+      margin-left:calc(var(--sidebar-w) + max(0px, (100vw - var(--sidebar-w) - var(--friends-w) - 700px) / 2));
+      margin-right:calc(var(--friends-w) + max(0px, (100vw - var(--sidebar-w) - var(--friends-w) - 700px) / 2));
+      flex:1;min-width:0;padding:0 1.25rem 5rem;max-width:700px;
+    }
+
+    /* ── MOBILE TOP NAV ── */
+    .top-nav{position:sticky;top:0;z-index:50;background:rgba(5,8,15,0.88);backdrop-filter:blur(18px);border-bottom:1px solid var(--border);padding:0.7rem 1rem;display:none;align-items:center;justify-content:space-between;gap:0.75rem;}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.05rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:6px;}
+    .nav-logo-mark{width:24px;height:24px;background:linear-gradient(135deg,var(--accent),#d4851a);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:0.6rem;font-weight:800;color:#05080f;}
+    .btn-post{padding:0.4rem 0.85rem;border-radius:8px;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-size:0.78rem;font-weight:700;font-family:'Syne',sans-serif;border:none;cursor:pointer;text-decoration:none;display:flex;align-items:center;gap:4px;transition:all 0.2s;white-space:nowrap;}
+    .mobile-menu-btn{display:none;background:none;border:1px solid var(--border);border-radius:8px;padding:6px 8px;color:var(--muted);cursor:pointer;align-items:center;justify-content:center;}
+    .mobile-menu-btn svg{width:16px;height:16px;}
+
+    /* ── FRIENDS SIDEBAR ── */
+    .friends-sidebar{width:var(--friends-w);flex-shrink:0;position:fixed;top:0;right:0;height:100vh;display:flex;flex-direction:column;padding:1.25rem 1rem;border-left:1px solid var(--border);background:rgba(5,8,15,0.7);backdrop-filter:blur(20px);z-index:40;transition:transform 0.3s cubic-bezier(0.16,1,0.3,1);overflow:hidden;}
+    .friends-header{font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--fg);margin-bottom:0.75rem;display:flex;align-items:center;justify-content:space-between;}
+    .friends-count{font-size:0.65rem;background:var(--accent-dim);border:1px solid rgba(243,209,59,0.2);color:var(--accent);border-radius:8px;padding:2px 7px;font-weight:600;}
+    .friends-search-wrap{position:relative;margin-bottom:0.75rem;}
+    .friends-search{width:100%;padding:0.5rem 0.75rem 0.5rem 2rem;background:rgba(12,18,32,0.6);border:1px solid var(--border);border-radius:9px;color:var(--fg);font-size:0.8rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s;}
+    .friends-search:focus{border-color:rgba(243,209,59,0.35);}
+    .friends-search::placeholder{color:var(--muted);}
+    .friends-search-icon{position:absolute;left:0.6rem;top:50%;transform:translateY(-50%);width:12px;height:12px;color:var(--muted);pointer-events:none;}
+    .friends-list{flex:1;overflow-y:auto;scrollbar-width:thin;scrollbar-color:rgba(122,133,153,0.2) transparent;}
+    .friends-list::-webkit-scrollbar{width:3px;}
+    .friends-list::-webkit-scrollbar-thumb{background:rgba(122,133,153,0.2);border-radius:2px;}
+    .friend-item{display:flex;align-items:center;gap:9px;padding:0.55rem 0.6rem;border-radius:10px;cursor:pointer;transition:all 0.15s;border:1px solid transparent;}
+    .friend-item:hover{background:rgba(255,255,255,0.04);border-color:var(--border);}
+    .friend-info{flex:1;min-width:0;}
+    .friend-name{font-size:0.82rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .friend-pts{font-size:0.67rem;color:var(--muted);}
+    .friend-pts-val{color:var(--accent);font-weight:600;}
+    .friends-empty{text-align:center;padding:2rem 0.5rem;color:var(--muted);font-size:0.8rem;}
+    .friends-empty-icon{font-size:2rem;margin-bottom:0.5rem;opacity:0.5;}
+    .friends-empty p{margin-bottom:0.75rem;line-height:1.5;}
+    .sk-friend{display:flex;align-items:center;gap:9px;padding:0.55rem 0.6rem;margin-bottom:2px;}
+    .lb-sidebar-section{margin-top:1rem;border-top:1px solid var(--border);padding-top:0.75rem;}
+    .lb-sidebar-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.78rem;color:var(--fg);margin-bottom:0.5rem;}
+    .lb-sidebar-row{display:flex;align-items:center;gap:8px;padding:0.4rem 0.5rem;border-radius:8px;cursor:pointer;transition:background 0.15s;}
+    .lb-sidebar-row:hover{background:rgba(255,255,255,0.04);}
+    .lb-sidebar-rank{font-family:'Syne',sans-serif;font-weight:800;font-size:0.7rem;width:16px;text-align:center;flex-shrink:0;color:var(--muted);}
+    .lb-sidebar-rank.gold{color:#f3d13b;}.lb-sidebar-rank.silver{color:#b0b8c8;}.lb-sidebar-rank.bronze{color:#cd7f32;}
+    .lb-sidebar-info{flex:1;min-width:0;}
+    .lb-sidebar-name{font-size:0.75rem;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+    .lb-sidebar-pts{font-size:0.62rem;color:var(--accent);font-weight:600;}
+
+    /* ── ARENA BANNER ── */
+    .arena-banner{
+      display:flex;align-items:center;gap:1rem;
+      background:linear-gradient(135deg,rgba(168,85,247,0.12),rgba(168,85,247,0.06));
+      border:1px solid rgba(168,85,247,0.3);
+      border-radius:14px;padding:0.9rem 1.1rem;margin:0.75rem 0 0.25rem;
+      cursor:pointer;text-decoration:none;transition:all 0.22s;
+    }
+    .arena-banner:hover{border-color:rgba(168,85,247,0.6);box-shadow:0 0 24px rgba(168,85,247,0.2);transform:translateY(-1px);}
+    .arena-icon{width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#a855f7,#7c3aed);display:flex;align-items:center;justify-content:center;font-size:1.1rem;flex-shrink:0;}
+    .arena-text{flex:1;min-width:0;}
+    .arena-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:#d8b4fe;margin-bottom:1px;}
+    .arena-sub{font-size:0.74rem;color:var(--muted);}
+    .arena-cta{font-family:'Syne',sans-serif;font-size:0.72rem;font-weight:700;color:#a855f7;white-space:nowrap;display:flex;align-items:center;gap:3px;}
+    .arena-cta svg{width:12px;height:12px;}
+
+    /* ── FEED TABS ── */
+    .feed-tabs{display:flex;border-bottom:1px solid var(--border);margin:0.25rem 0 0;}
+    .feed-tab{flex:1;padding:0.65rem 0;text-align:center;font-size:0.88rem;font-weight:600;color:var(--muted);background:transparent;border:none;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;font-family:'DM Sans',sans-serif;}
+    .feed-tab.active{color:var(--fg);border-bottom-color:var(--accent);}
+    .feed-tab:hover:not(.active){color:var(--fg);}
+
+    /* ── FILTERS ── */
+    .filters-wrap{margin:0.6rem 0 0.25rem;}
+    .filters-toggle{display:flex;align-items:center;gap:5px;background:rgba(12,18,32,0.5);border:1px solid var(--border);border-radius:8px;padding:4px 10px;font-size:0.72rem;color:var(--muted);cursor:pointer;width:fit-content;transition:all 0.2s;user-select:none;}
+    .filters-toggle:hover{color:var(--fg);}
+    .filters-toggle svg{width:11px;height:11px;transition:transform 0.2s;}
+    .filters-toggle.open svg:last-child{transform:rotate(180deg);}
+    .filters-active-badge{background:var(--accent-dim);border:1px solid rgba(243,209,59,0.3);color:var(--accent);border-radius:5px;padding:1px 5px;font-size:0.65rem;font-weight:600;}
+    .filters-panel{display:none;background:rgba(12,18,32,0.7);border:1px solid var(--border);border-radius:10px;padding:0.75rem;margin-top:5px;}
+    .filters-panel.open{display:block;}
+    .filter-row{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:6px;}
+    .filter-row:last-child{margin-bottom:0;}
+    .filter-row-label{font-size:0.65rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:4px;}
+    .filter-chip{padding:3px 9px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.72rem;font-weight:500;cursor:pointer;transition:all 0.15s;white-space:nowrap;}
+    .filter-chip.active{background:var(--accent-dim);border-color:rgba(243,209,59,0.4);color:var(--accent);}
+    .filter-chip:hover:not(.active){color:var(--fg);}
+
+    /* ══════════════════════════════════════════
+       RANK FRAME SYSTEM
+       Key rule: .avatar-frame-wrap width/height = 128px (SVG viewBox).
+       The inner avatar is absolutely centred. Frame SVG fills 100%.
+    ══════════════════════════════════════════ */
+    .avatar-frame-wrap{position:relative;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center;}
+    .afwsm{width:56px;height:56px;}
+    .afwmd{width:60px;height:60px;}
+    .afwlg{width:84px;height:84px;}
+    .afwxs{width:42px;height:42px;}
+    .rank-frame-svg{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;}
+    .avatar-frame-wrap .author-avatar,
+    .avatar-frame-wrap .friend-avatar,
+    .avatar-frame-wrap .pm-avatar,
+    .avatar-frame-wrap .lb-sidebar-avatar,
+    .avatar-frame-wrap .lb-full-avatar,
+    .avatar-frame-wrap .user-result-avatar{
+      position:absolute;top:50%;left:50%;
+      transform:translate(-50%,-50%);z-index:1;
+    }
+    .rank-pill-badge{
+      position:absolute;bottom:-5px;left:50%;transform:translateX(-50%);
+      font-size:0.5rem;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;
+      border-radius:20px;padding:1px 6px;white-space:nowrap;z-index:3;
+      font-family:'Syne',sans-serif;display:none;
+    }
+    .afwlg .rank-pill-badge{display:block;}
+    .rank-pill-badge.rk-starter {background:#2a2320;color:#8c7a6b;border:1px solid #4a3a30;}
+    .rank-pill-badge.rk-novice  {background:#1e2010;color:#8c9a5b;border:1px solid #3a4820;}
+    .rank-pill-badge.rk-rookie  {background:#1a1e28;color:#6b8cbb;border:1px solid #2a3a5a;}
+    .rank-pill-badge.rk-pro     {background:#281e10;color:#d4a050;border:1px solid #5a3a10;}
+    .rank-pill-badge.rk-expert  {background:#202028;color:#c0c8e0;border:1px solid #4050a0;}
+    .rank-pill-badge.rk-legend  {background:#28200a;color:#f3d13b;border:1px solid #8a6010;box-shadow:0 0 6px rgba(243,209,59,0.3);}
+
+    @keyframes frameGlow{
+      0%,100%{filter:drop-shadow(0 0 4px var(--fg-color));}
+      50%{filter:drop-shadow(0 0 12px var(--fg-color)) drop-shadow(0 0 22px var(--fg-color));}
+    }
+    @keyframes frameRotate{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}
+    @keyframes wingFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+    @keyframes framePulse{0%,100%{opacity:1}50%{opacity:0.7;}}
+    .fr-pro   {--fg-color:rgba(212,160,80,0.7); animation:frameGlow 3s ease-in-out infinite;}
+    .fr-expert{--fg-color:rgba(150,170,230,0.7);animation:frameGlow 2.5s ease-in-out infinite;}
+    .fr-legend{--fg-color:rgba(243,209,59,0.85);animation:frameGlow 2s ease-in-out infinite;}
+
+    /* ── PROBLEM CARD ── */
+    .problem-card{background:var(--card);backdrop-filter:blur(16px);border:1px solid var(--border);border-radius:18px;margin-bottom:1rem;overflow:hidden;transition:transform 0.2s,box-shadow 0.2s,border-color 0.2s;animation:cardIn 0.4s cubic-bezier(0.16,1,0.3,1) both;cursor:pointer;}
+    .problem-card:hover{transform:translateY(-2px);box-shadow:0 12px 40px rgba(0,0,0,0.4);border-color:rgba(243,209,59,0.15);}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    .card-header{padding:0.9rem 1.2rem 0.6rem;display:flex;align-items:center;justify-content:space-between;}
+    .card-author{display:flex;align-items:center;gap:10px;cursor:pointer;}
+    .card-author:hover .author-name{color:var(--accent);}
+    .author-avatar{width:32px;height:32px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;color:var(--accent);}
+    .author-name{font-size:0.83rem;font-weight:600;transition:color 0.15s;}
+    .author-handle{font-size:0.7rem;color:var(--muted);}
+    .card-badges{display:flex;align-items:center;gap:5px;}
+    .badge{padding:2px 7px;border-radius:5px;font-size:0.68rem;font-weight:600;letter-spacing:0.03em;text-transform:uppercase;}
+    .badge-topic{background:rgba(0,229,255,0.09);color:var(--cyan);border:1px solid rgba(0,229,255,0.18);}
+    .badge-diff-1,.badge-diff-2{background:rgba(46,213,115,0.09);color:#2ed573;border:1px solid rgba(46,213,115,0.18);}
+    .badge-diff-3{background:rgba(243,209,59,0.09);color:var(--accent);border:1px solid rgba(243,209,59,0.18);}
+    .badge-diff-4{background:rgba(255,165,2,0.09);color:#ffa502;border:1px solid rgba(255,165,2,0.18);}
+    .badge-diff-5{background:rgba(255,71,87,0.09);color:var(--error);border:1px solid rgba(255,71,87,0.18);}
+    .card-problem{padding:0.1rem 1.2rem 0.9rem;border-bottom:1px solid var(--border);}
+    .math-display{background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:10px;padding:0.8rem 1rem;overflow-x:auto;text-align:center;font-size:1rem;}
+    .card-footer{padding:0.6rem 1.2rem;display:flex;align-items:center;justify-content:space-between;}
+    .card-stats{display:flex;align-items:center;gap:0.7rem;flex-wrap:wrap;}
+    .stat-pill{display:flex;align-items:center;gap:3px;font-size:0.72rem;color:var(--muted);}
+    .stat-pill svg{width:11px;height:11px;flex-shrink:0;}
+    .card-actions{display:flex;align-items:center;gap:6px;}
+    .action-btn{display:flex;align-items:center;gap:4px;padding:0.3rem 0.65rem;border-radius:7px;border:1px solid var(--border);background:transparent;font-size:0.74rem;font-weight:600;color:var(--muted);cursor:pointer;transition:all 0.15s;}
+    .action-btn svg{width:12px;height:12px;}
+    .action-btn:hover{color:var(--fg);}
+    .action-btn.upvoted{color:var(--accent);border-color:rgba(243,209,59,0.4);background:var(--accent-dim);}
+    .action-btn.solved{color:var(--success);border-color:rgba(46,213,115,0.3);background:rgba(46,213,115,0.06);cursor:default;}
+    .btn-solve{padding:0.3rem 0.8rem;border-radius:7px;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-size:0.74rem;font-weight:700;font-family:'Syne',sans-serif;border:none;cursor:pointer;transition:all 0.18s;}
+    .btn-solve:hover{transform:translateY(-1px);box-shadow:0 4px 12px var(--accent-glow);}
+
+    /* ── LEADERBOARD + SEARCH PAGE ── */
+    .lb-page{display:none;}
+    .lb-page.active{display:block;}
+    .page-title{font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;padding:1.25rem 0 0.75rem;display:flex;align-items:center;gap:8px;}
+    .search-input-wrap{position:relative;margin-bottom:1rem;}
+    .search-input{width:100%;padding:0.75rem 1rem 0.75rem 2.5rem;background:rgba(12,18,32,0.7);border:1px solid var(--border);border-radius:12px;color:var(--fg);font-size:0.9rem;font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.2s,box-shadow 0.2s;}
+    .search-input:focus{border-color:rgba(243,209,59,0.4);box-shadow:0 0 0 3px rgba(243,209,59,0.07);}
+    .search-input::placeholder{color:var(--muted);}
+    .search-input-icon{position:absolute;left:0.85rem;top:50%;transform:translateY(-50%);width:16px;height:16px;color:var(--muted);pointer-events:none;}
+
+    .lb-top-section{margin-bottom:1.25rem;}
+    .lb-section-label{font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin-bottom:0.6rem;display:flex;align-items:center;gap:5px;}
+    .lb-full-row{display:flex;align-items:center;gap:12px;padding:0.75rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:0.5rem;cursor:pointer;transition:all 0.18s;animation:cardIn 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+    .lb-full-row:hover{border-color:rgba(243,209,59,0.2);transform:translateY(-1px);}
+    .lb-full-rank{font-family:'Syne',sans-serif;font-weight:800;font-size:1rem;width:28px;text-align:center;flex-shrink:0;color:var(--muted);}
+    .lb-full-rank.gold{color:#f3d13b;}.lb-full-rank.silver{color:#b0b8c8;}.lb-full-rank.bronze{color:#cd7f32;}
+    .lb-full-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:1px solid rgba(243,209,59,0.2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;color:var(--accent);flex-shrink:0;}
+    .lb-full-info{flex:1;min-width:0;}
+    .lb-full-name{font-size:0.88rem;font-weight:600;display:flex;align-items:center;gap:5px;}
+    .lb-full-sub{font-size:0.72rem;color:var(--muted);}
+    .lb-full-pts{font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--accent);white-space:nowrap;}
+
+    .user-result-card{display:flex;align-items:center;gap:12px;padding:0.75rem 1rem;background:var(--card);border:1px solid var(--border);border-radius:14px;margin-bottom:0.5rem;cursor:pointer;transition:all 0.18s;animation:cardIn 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+    .user-result-card:hover{border-color:rgba(243,209,59,0.25);transform:translateY(-1px);}
+    .user-result-avatar{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:1px solid rgba(243,209,59,0.2);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.95rem;color:var(--accent);flex-shrink:0;}
+    .user-result-info{flex:1;min-width:0;}
+    .user-result-name{font-size:0.9rem;font-weight:600;}
+    .user-result-handle{font-size:0.75rem;color:var(--muted);}
+    .user-result-sub{font-size:0.7rem;color:var(--muted);margin-top:2px;}
+    .user-result-sub .val{color:var(--accent);font-weight:600;}
+
+    /* ── PROFILE MODAL ── */
+    .modal-backdrop{position:fixed;inset:0;z-index:200;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);display:none;align-items:flex-end;justify-content:center;}
+    .modal-backdrop.open{display:flex;}
+    .profile-modal{width:100%;max-width:480px;background:#0c1220;border:1px solid var(--border);border-radius:22px 22px 0 0;padding:1.5rem 1.5rem 2.5rem;animation:slideUp 0.35s cubic-bezier(0.16,1,0.3,1) both;max-height:85vh;overflow-y:auto;position:relative;}
+    @keyframes slideUp{from{transform:translateY(100%);opacity:0}to{transform:translateY(0);opacity:1}}
+    .modal-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 1.25rem;}
+    .modal-close{position:absolute;top:1rem;right:1rem;background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:1.2rem;padding:4px;}
+    .pm-header{display:flex;align-items:flex-start;gap:1rem;margin-bottom:1.1rem;}
+    .pm-avatar{width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:1.4rem;color:var(--accent);flex-shrink:0;box-shadow:0 0 0 4px rgba(243,209,59,0.1);}
+    .pm-info{flex:1;min-width:0;}
+    .pm-name{font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;letter-spacing:-0.02em;display:flex;align-items:center;gap:6px;}
+    .pm-handle{font-size:0.78rem;color:var(--muted);margin-top:2px;}
+    .pm-bio{font-size:0.85rem;opacity:0.8;line-height:1.55;margin:0.7rem 0;}
+    .pm-bio.empty{color:var(--muted);font-style:italic;}
+    .pm-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:4px;margin-bottom:1.1rem;border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+    .pm-stat{padding:0.65rem 0.4rem;text-align:center;background:rgba(5,8,15,0.4);}
+    .pm-stat:not(:last-child){border-right:1px solid var(--border);}
+    .pm-stat-val{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;display:block;}
+    .pm-stat-val.accent{color:var(--accent);}
+    .pm-stat-label{font-size:0.62rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:1px;display:block;}
+    .pm-join{font-size:0.72rem;color:var(--muted);display:flex;align-items:center;gap:4px;margin-bottom:1rem;}
+    .pm-join svg{width:11px;height:11px;}
+    .btn-follow{width:100%;padding:0.7rem;border-radius:11px;font-size:0.9rem;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.25s;border:none;}
+    .btn-follow.follow{background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;}
+    .btn-follow.follow:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--accent-glow);}
+    .btn-follow.following{background:transparent;border:1px solid var(--border);color:var(--muted);}
+    .btn-follow.following:hover{border-color:rgba(255,71,87,0.4);color:var(--error);}
+    .btn-view-full{display:block;width:100%;padding:0.55rem;border-radius:9px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.82rem;font-family:'DM Sans',sans-serif;text-align:center;text-decoration:none;cursor:pointer;transition:all 0.18s;margin-top:0.5rem;}
+    .btn-view-full:hover{color:var(--fg);border-color:rgba(255,255,255,0.2);}
+
+    /* ── TOASTS ── */
+    .toast-container{position:fixed;top:72px;right:16px;z-index:300;display:flex;flex-direction:column;gap:8px;}
+    .toast{min-width:220px;padding:0.75rem 0.9rem;background:rgba(12,18,32,0.97);border:1px solid var(--border);border-left:4px solid var(--accent);color:var(--fg);border-radius:10px;transform:translateX(120%);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(12px);font-size:0.82rem;display:flex;align-items:center;gap:0.5rem;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+    .toast.show{transform:translateX(0);}
+    .toast.success{border-left-color:var(--success);}
+    .toast.error{border-left-color:var(--error);}
+
+    .mobile-overlay{display:none;position:fixed;inset:0;z-index:38;background:rgba(0,0,0,0.55);}
+    .mobile-overlay.open{display:block;}
+
+    .sk-card{background:var(--card);border:1px solid var(--border);border-radius:18px;margin-bottom:1rem;overflow:hidden;padding:1rem;}
+    .sk{background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:5px;}
+    @keyframes shimmer{to{background-position:-200% 0}}
+
+    .feed-empty{text-align:center;padding:3.5rem 1rem;color:var(--muted);}
+    .feed-empty-icon{font-size:2.5rem;margin-bottom:0.75rem;opacity:0.5;}
+    .feed-empty h3{font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:0.3rem;}
+    .feed-empty p{font-size:0.83rem;margin-bottom:1.25rem;}
+    .btn-discover{display:inline-flex;align-items:center;gap:5px;padding:0.55rem 1.1rem;border-radius:9px;background:var(--accent-dim);border:1px solid rgba(243,209,59,0.3);color:var(--accent);font-size:0.82rem;font-weight:600;cursor:pointer;transition:all 0.2s;}
+
+    .load-more-btn{width:100%;padding:0.75rem;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.85rem;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:0.25rem;}
+    .load-more-btn:hover{color:var(--fg);}
+
+    .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;z-index:50;background:rgba(5,8,15,0.95);backdrop-filter:blur(20px);border-top:1px solid var(--border);padding:0.5rem 0 calc(0.5rem + env(safe-area-inset-bottom));justify-content:space-around;}
+    .bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0.4rem 0.8rem;color:var(--muted);text-decoration:none;font-size:0.6rem;font-weight:600;text-transform:uppercase;letter-spacing:0.04em;cursor:pointer;border:none;background:none;transition:color 0.15s;font-family:'DM Sans',sans-serif;}
+    .bottom-nav-item svg{width:20px;height:20px;}
+    .bottom-nav-item.active{color:var(--accent);}
+    .bottom-nav-item.arena{color:var(--arena);}
+
+    @media(max-width:1100px){:root{--friends-w:240px;}}
+    @media(max-width:900px){
+      .friends-sidebar{transform:translateX(100%);}
+      .friends-sidebar.open{transform:translateX(0);}
+      .main-content{
+        margin-right:0;
+        margin-left:calc(var(--sidebar-w) + max(0px, (100vw - var(--sidebar-w) - 700px) / 2));
+      }
+    }
+    @media(max-width:680px){
+      .sidenav{transform:translateX(-100%);}
+      .sidenav.open{transform:translateX(0);}
+      .main-content{margin-left:0;margin-right:0;padding:0 0.85rem 5rem;}
+      .top-nav{display:flex;}
+      .bottom-nav{display:flex;}
+    }
+  </style>
+</head>
+<body>
+<canvas id="starfield"></canvas>
+<div class="nebula nebula-1"></div><div class="nebula nebula-2"></div><div class="nebula nebula-3"></div>
+<div class="grid-overlay"></div>
+<div class="toast-container" id="toastContainer"></div>
+<div class="mobile-overlay" id="mobileOverlay" onclick="closeAllPanels()"></div>
+
+<div class="modal-backdrop" id="profileModal" onclick="closeProfileModal(event)">
+  <div class="profile-modal" id="profileModalInner">
+    <div class="modal-handle"></div>
+    <button class="modal-close" onclick="closeProfileModalDirect()">✕</button>
+    <div id="profileModalContent"></div>
+  </div>
+</div>
+
+<svg width="0" height="0" style="position:absolute;overflow:hidden;" aria-hidden="true">
+  <defs>
+    <linearGradient id="gStarter" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6b4a30"/><stop offset="50%" stop-color="#4a3020"/><stop offset="100%" stop-color="#6b4a30"/>
+    </linearGradient>
+    <linearGradient id="gNovice" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#6a7a5a"/><stop offset="50%" stop-color="#485840"/><stop offset="100%" stop-color="#6a7a5a"/>
+    </linearGradient>
+    <linearGradient id="gRookie" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3a5080"/><stop offset="40%" stop-color="#2a3a60"/><stop offset="100%" stop-color="#4a6090"/>
+    </linearGradient>
+    <linearGradient id="gPro" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#ffd060"/><stop offset="35%" stop-color="#d4851a"/><stop offset="65%" stop-color="#f3b030"/><stop offset="100%" stop-color="#ffd060"/>
+    </linearGradient>
+    <linearGradient id="gExpert" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#c0d0f0"/><stop offset="30%" stop-color="#8090c0"/><stop offset="60%" stop-color="#d0e0ff"/><stop offset="100%" stop-color="#9090d0"/>
+    </linearGradient>
+    <linearGradient id="gLegend" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3d13b"/><stop offset="25%" stop-color="#ff9050"/><stop offset="50%" stop-color="#f3d13b"/><stop offset="75%" stop-color="#e040fb"/><stop offset="100%" stop-color="#f3d13b"/>
+    </linearGradient>
+    <filter id="fGlow" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="2.5" result="b"/>
+      <feComposite in="SourceGraphic" in2="b" operator="over"/>
+    </filter>
+    <filter id="fGlowS" x="-50%" y="-50%" width="200%" height="200%">
+      <feGaussianBlur in="SourceGraphic" stdDeviation="4" result="b"/>
+      <feComposite in="SourceGraphic" in2="b" operator="over"/>
+    </filter>
+  </defs>
+</svg>
+
+<div class="app-shell">
+  <nav class="sidenav" id="sidenav">
+    <a href="/" class="sidenav-logo"><div class="sidenav-logo-mark">✦</div>Astrophiles</a>
+    <div class="nav-section-label">Menu</div>
+    <a href="/explore" class="nav-item active" id="nav-explore">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Explore</a>
+    <a href="/profile" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Profile</a>
+    <button class="nav-item" onclick="activatePage('leaderboard')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Leaderboard</button>
+    <a href="/create" class="nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create Problem</a>
+    <a href="/challenges.html" class="nav-item arena-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Math Arena ⚡</a>
+    <div class="nav-spacer"></div>
+    <a href="/create" class="nav-post-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Post Problem</a>
+    <a href="/profile" class="nav-user-card" id="navUserCard" style="display:none;">
+      <div class="nav-user-avatar" id="navUserAvatar">?</div>
+      <div class="nav-user-info"><div class="nav-user-name" id="navUserName">—</div><div class="nav-user-pts"><span id="navUserPts">0</span> Elo</div></div>
+    </a>
+  </nav>
+
+  <div class="main-content">
+    <nav class="top-nav" id="topNav">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <button class="mobile-menu-btn" onclick="toggleSidenav()" style="display:flex;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+        </button>
+        <a href="/" class="nav-logo"><div class="nav-logo-mark">✦</div>Astrophiles</a>
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;">
+        <button class="mobile-menu-btn" onclick="toggleFriendsSidebar()" style="display:flex;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </button>
+        <a href="/create" class="btn-post">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Post</a>
+      </div>
+    </nav>
+
+    <div id="page-explore">
+      <a href="/math-arena.html" class="arena-banner">
+        <div class="arena-icon">⚡</div>
+        <div class="arena-text">
+          <div class="arena-title">Math Arena</div>
+          <div class="arena-sub">Real-time duels — challenge others and prove your rank</div>
+        </div>
+        <div class="arena-cta">Enter
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </div>
+      </a>
+
+      <div class="feed-tabs">
+        <button class="feed-tab active" id="tab-discover" onclick="switchTab('discover')">🌍 Discover</button>
+        <button class="feed-tab" id="tab-friends" onclick="switchTab('friends')">👥 Following</button>
+      </div>
+      <div class="filters-wrap" id="filtersWrap">
+        <div class="filters-toggle" id="filtersToggle" onclick="toggleFilters()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" y1="6" x2="20" y2="6"/><line x1="8" y1="12" x2="16" y2="12"/><line x1="11" y1="18" x2="13" y2="18"/></svg>
+          Filters
+          <span class="filters-active-badge" id="activeFilterBadge" style="display:none;">•</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+        <div class="filters-panel" id="filtersPanel">
+          <div class="filter-row-label">Sort</div>
+          <div class="filter-row" id="sortRow">
+            <button class="filter-chip" onclick="setFilter('sort','trending',this)">🔥 Trending</button>
+            <button class="filter-chip active" onclick="setFilter('sort','new',this)">✨ New</button>
+            <button class="filter-chip" onclick="setFilter('sort','top',this)">⭐ Top</button>
+          </div>
+          <div class="filter-row-label" style="margin-top:8px;">Topic</div>
+          <div class="filter-row" id="topicRow">
+            <button class="filter-chip active" onclick="setFilter('topic','',this)">All</button>
+            <button class="filter-chip" onclick="setFilter('topic','algebra',this)">Algebra</button>
+            <button class="filter-chip" onclick="setFilter('topic','calculus',this)">Calculus</button>
+            <button class="filter-chip" onclick="setFilter('topic','geometry',this)">Geometry</button>
+            <button class="filter-chip" onclick="setFilter('topic','number_theory',this)">Number Theory</button>
+            <button class="filter-chip" onclick="setFilter('topic','statistics',this)">Statistics</button>
+          </div>
+          <div class="filter-row-label" style="margin-top:8px;">Difficulty</div>
+          <div class="filter-row" id="diffRow">
+            <button class="filter-chip active" onclick="setFilter('diff','',this)">Any</button>
+            <button class="filter-chip" onclick="setFilter('diff','1',this)">★ Easy</button>
+            <button class="filter-chip" onclick="setFilter('diff','2',this)">★★</button>
+            <button class="filter-chip" onclick="setFilter('diff','3',this)">★★★ Med</button>
+            <button class="filter-chip" onclick="setFilter('diff','4',this)">★★★★ Hard</button>
+            <button class="filter-chip" onclick="setFilter('diff','5',this)">★★★★★ Pro</button>
+          </div>
+        </div>
+      </div>
+      <div id="feed" style="margin-top:0.75rem;"></div>
+      <button class="load-more-btn" id="loadMoreBtn" onclick="loadMore()" style="display:none;">Load more</button>
+    </div>
+
+    <div id="page-leaderboard" class="lb-page">
+      <div class="page-title">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="20" height="20"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+        Leaderboard
+      </div>
+      <div class="search-input-wrap">
+        <svg class="search-input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        <input class="search-input" id="peopleSearchInput" type="text" placeholder="Search players…" oninput="debouncedSearch(this.value)" autocomplete="off"/>
+      </div>
+      <div id="lb-top-wrapper">
+        <div class="lb-section-label">🏆 Top 10 Players</div>
+        <div id="leaderboardList"></div>
+      </div>
+      <div id="searchResults" style="display:none;">
+        <div class="lb-section-label">🔍 Search Results</div>
+        <div id="searchResultsList"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="friends-sidebar" id="friendsSidebar">
+    <div class="friends-header"><span>Following</span><span class="friends-count" id="friendsCount">0</span></div>
+    <div class="friends-search-wrap">
+      <svg class="friends-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input class="friends-search" id="friendsSearch" type="text" placeholder="Search following…" oninput="filterFriends(this.value)"/>
+    </div>
+    <div class="friends-list" id="friendsList">
+      <div class="sk-friend"><div class="sk" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="sk" style="width:90px;height:11px;margin-bottom:5px;"></div><div class="sk" style="width:55px;height:9px;"></div></div></div>
+      <div class="sk-friend"><div class="sk" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="sk" style="width:90px;height:11px;margin-bottom:5px;"></div><div class="sk" style="width:55px;height:9px;"></div></div></div>
+    </div>
+    <div class="lb-sidebar-section" id="sidebarLb" style="display:none;">
+      <div class="lb-sidebar-title">🏆 Top Players</div>
+      <div id="sidebarLbList"></div>
+    </div>
+  </aside>
+</div>
+
+<nav class="bottom-nav">
+  <a href="/explore" class="bottom-nav-item active">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Explore</a>
+  <button class="bottom-nav-item" onclick="activatePage('leaderboard')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Leaders</button>
+  <a href="/math-arena.html" class="bottom-nav-item arena">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Arena</a>
+  <a href="/create" class="bottom-nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>Create</a>
+  <a href="/profile" class="bottom-nav-item">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Me</a>
+</nav>
+
+<script>
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function relTime(iso){const d=Date.now()-new Date(iso).getTime(),m=Math.floor(d/60000);if(m<1)return'just now';if(m<60)return`${m}m`;const h=Math.floor(m/60);if(h<24)return`${h}h`;return`${Math.floor(h/24)}d`;}
+function uPts(u){return Math.round((u.solver_points||0)+(u.creator_points||0));}
+function ptsRank(p){if(p>=5000)return'Legend';if(p>=2000)return'Expert';if(p>=800)return'Pro';if(p>=200)return'Rookie';if(p>=50)return'Novice';return'Starter';}
+const CMAP=(()=>{const c=['AF','AL','DZ','AD','AO','AG','AR','AM','AU','AT','AZ','BS','BH','BD','BB','BY','BE','BZ','BJ','BT','BO','BA','BW','BR','BN','BG','BF','BI','CV','KH','CM','CA','CF','TD','CL','CN','CO','KM','CG','CR','HR','CU','CY','CZ','DK','DJ','DM','DO','EC','EG','SV','GQ','ER','EE','SZ','ET','FJ','FI','FR','GA','GM','GE','DE','GH','GR','GD','GT','GN','GW','GY','HT','HN','HU','IS','IN','ID','IR','IQ','IE','IL','IT','JM','JP','JO','KZ','KE','KI','KP','KR','KW','KG','LA','LV','LB','LS','LR','LY','LI','LT','LU','MG','MW','MY','MV','ML','MT','MH','MR','MU','MX','FM','MD','MC','MN','ME','MA','MZ','MM','NA','NR','NP','NL','NZ','NI','NE','NG','MK','NO','OM','PK','PW','PA','PG','PY','PE','PH','PL','PT','QA','RO','RU','RW','KN','LC','VC','WS','SM','ST','SA','SN','RS','SC','SL','SG','SK','SI','SB','SO','ZA','SS','ES','LK','SD','SR','SE','CH','SY','TW','TJ','TZ','TH','TL','TG','TO','TT','TN','TR','TM','TV','UG','UA','AE','GB','US','UY','UZ','VU','VE','VN','YE','ZM','ZW'];const m={};c.forEach(x=>{m[x]=x.split('').map(ch=>String.fromCodePoint(0x1F1E0+ch.charCodeAt(0)-65)).join('');});return m;})();
+function showToast(msg,type){const c=document.getElementById('toastContainer');const t=document.createElement('div');t.className=`toast ${type||''}`;t.innerHTML=`<span>${type==='success'?'✓':'✦'}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.classList.add('show'),10);setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3000);}
+function skels(n){return Array.from({length:n},()=>`<div class="sk-card"><div style="display:flex;align-items:center;gap:9px;margin-bottom:0.9rem;"><div class="sk" style="width:32px;height:32px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="sk" style="width:110px;height:12px;margin-bottom:5px;"></div><div class="sk" style="width:70px;height:10px;"></div></div></div><div class="sk" style="width:100%;height:58px;border-radius:10px;margin-bottom:0.9rem;"></div><div style="display:flex;justify-content:space-between;"><div class="sk" style="width:70px;height:26px;border-radius:7px;"></div><div class="sk" style="width:90px;height:26px;border-radius:7px;"></div></div></div>`).join('');}
+
+/* ══════════════════
+   RANK SYSTEM
+══════════════════ */
+const RANKS=[
+  {key:'legend',min:5000,label:'✦ Legend'},
+  {key:'expert',min:2000,label:'⬡ Expert'},
+  {key:'pro',   min:800, label:'◈ Pro'},
+  {key:'rookie',min:200, label:'◇ Rookie'},
+  {key:'novice',min:50,  label:'▹ Novice'},
+  {key:'starter',min:0, label:'· Starter'},
+];
+function getRank(p){return RANKS.find(r=>p>=r.min)||RANKS.at(-1);}
+
+const FRAMES={
+  starter:()=>`
+    <polygon points="64,14 90,22 108,44 108,84 90,106 38,106 20,84 20,44 38,22"
+      fill="none" stroke="url(#gStarter)" stroke-width="3.5" stroke-linejoin="round" stroke-dasharray="6 3" opacity="0.9"/>
+    <polygon points="64,18 88,25 104,46 104,82 88,103 40,103 24,82 24,46 40,25"
+      fill="none" stroke="url(#gStarter)" stroke-width="1" opacity="0.4"/>`,
+  novice:()=>`
+    <rect x="20" y="20" width="88" height="88" rx="6" fill="none" stroke="url(#gNovice)" stroke-width="3" opacity="0.9"/>
+    <rect x="24" y="24" width="80" height="80" rx="4" fill="none" stroke="url(#gNovice)" stroke-width="1" opacity="0.35"/>
+    <polygon points="20,20 28,14 36,20 28,26" fill="url(#gNovice)" opacity="0.9"/>
+    <polygon points="108,20 100,14 92,20 100,26" fill="url(#gNovice)" opacity="0.9"/>
+    <polygon points="20,108 28,114 36,108 28,102" fill="url(#gNovice)" opacity="0.9"/>
+    <polygon points="108,108 100,114 92,108 100,102" fill="url(#gNovice)" opacity="0.9"/>`,
+  rookie:()=>`
+    <polygon points="64,12 100,32 100,96 64,116 28,96 28,32" fill="none" stroke="url(#gRookie)" stroke-width="4" stroke-linejoin="round"/>
+    <polygon points="64,18 96,36 96,92 64,110 32,92 32,36" fill="none" stroke="url(#gRookie)" stroke-width="1.5" opacity="0.4"/>
+    <rect x="58" y="10" width="12" height="5" rx="1" fill="url(#gRookie)" opacity="0.8"/>
+    <rect x="58" y="113" width="12" height="5" rx="1" fill="url(#gRookie)" opacity="0.8"/>`,
+  pro:()=>`
+    <circle cx="64" cy="64" r="52" fill="none" stroke="url(#gPro)" stroke-width="4.5"/>
+    <circle cx="64" cy="64" r="56" fill="none" stroke="url(#gPro)" stroke-width="1.2" opacity="0.3"/>
+    <path d="M44,16 Q64,4 84,16" fill="none" stroke="url(#gPro)" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="44" cy="16" r="3" fill="url(#gPro)"/>
+    <circle cx="84" cy="16" r="3" fill="url(#gPro)"/>
+    <circle cx="64" cy="8" r="4" fill="url(#gPro)"/>
+    <path d="M44,112 Q64,124 84,112" fill="none" stroke="url(#gPro)" stroke-width="3" stroke-linecap="round"/>
+    <circle cx="44" cy="112" r="3" fill="url(#gPro)"/>
+    <circle cx="84" cy="112" r="3" fill="url(#gPro)"/>
+    <circle cx="64" cy="120" r="4" fill="url(#gPro)"/>
+    <circle cx="64" cy="64" r="52" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="40 287" opacity="0.35" style="animation:frameRotate 4s linear infinite;transform-origin:64px 64px;"/>`,
+  expert:()=>`
+    <circle cx="64" cy="64" r="50" fill="none" stroke="url(#gExpert)" stroke-width="5"/>
+    <circle cx="64" cy="64" r="55" fill="none" stroke="url(#gExpert)" stroke-width="1" opacity="0.3"/>
+    <path d="M14,64 C4,50 0,36 10,28 C18,22 26,30 22,42 C26,32 32,28 38,34 C42,40 34,50 28,56 L14,64Z" fill="url(#gExpert)" opacity="0.75" style="animation:wingFloat 3s ease-in-out infinite;"/>
+    <path d="M114,64 C124,50 128,36 118,28 C110,22 102,30 106,42 C102,32 96,28 90,34 C86,40 94,50 100,56 L114,64Z" fill="url(#gExpert)" opacity="0.75" style="animation:wingFloat 3s ease-in-out infinite 0.4s;"/>
+    <circle cx="64" cy="64" r="50" fill="none" stroke="white" stroke-width="2" stroke-dasharray="30 285" opacity="0.4" style="animation:frameRotate 3s linear infinite;transform-origin:64px 64px;"/>
+    <polygon points="64,6 66,12 72,12 68,16 70,22 64,18 58,22 60,16 56,12 62,12" fill="url(#gExpert)" filter="url(#fGlow)"/>`,
+  legend:()=>`
+    <circle cx="64" cy="64" r="58" fill="none" stroke="url(#gLegend)" stroke-width="2" opacity="0.35" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite;transform-origin:64px 64px;"/>
+    <circle cx="64" cy="64" r="52" fill="none" stroke="url(#gLegend)" stroke-width="5.5" filter="url(#fGlow)"/>
+    <circle cx="64" cy="64" r="47" fill="none" stroke="url(#gLegend)" stroke-width="1" opacity="0.4"/>
+    <path d="M12,64 C-4,44 -6,20 8,12 C18,6 30,16 24,32 C30,18 40,14 48,22 C54,30 44,44 36,54 L12,64Z" fill="url(#gLegend)" opacity="0.8" filter="url(#fGlow)" style="animation:wingFloat 2.5s ease-in-out infinite;"/>
+    <path d="M18,64 C8,50 6,34 16,28 C22,24 30,32 26,42 L18,64Z" fill="url(#gLegend)" opacity="0.4"/>
+    <path d="M116,64 C132,44 134,20 120,12 C110,6 98,16 104,32 C98,18 88,14 80,22 C74,30 84,44 92,54 L116,64Z" fill="url(#gLegend)" opacity="0.8" filter="url(#fGlow)" style="animation:wingFloat 2.5s ease-in-out infinite 0.5s;"/>
+    <path d="M110,64 C120,50 122,34 112,28 C106,24 98,32 102,42 L110,64Z" fill="url(#gLegend)" opacity="0.4"/>
+    <path d="M50,18 Q64,2 78,18" fill="none" stroke="url(#gLegend)" stroke-width="3" stroke-linecap="round" filter="url(#fGlow)"/>
+    <polygon points="64,1 67,10 76,10 69,15 72,24 64,19 56,24 59,15 52,10 61,10" fill="url(#gLegend)" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite;"/>
+    <path d="M50,110 Q64,126 78,110" fill="none" stroke="url(#gLegend)" stroke-width="3" stroke-linecap="round" filter="url(#fGlow)"/>
+    <polygon points="64,127 67,118 76,118 69,113 72,104 64,109 56,104 59,113 52,118 61,118" fill="url(#gLegend)" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite 1s;"/>
+    <circle cx="64" cy="64" r="52" fill="none" stroke="white" stroke-width="2" stroke-dasharray="20 306" opacity="0.5" style="animation:frameRotate 2.5s linear infinite;transform-origin:64px 64px;"/>
+    <circle cx="64" cy="64" r="52" fill="none" stroke="url(#gLegend)" stroke-width="1.5" stroke-dasharray="60 265" opacity="0.6" style="animation:frameRotate 5s linear infinite reverse;transform-origin:64px 64px;"/>`,
+};
+
+function attachRankFrame(avatarEl, points, sizeClass) {
+  if (!avatarEl) return;
+  if (avatarEl.closest('.avatar-frame-wrap')) return;
+  const rank = getRank(typeof points === 'number' ? points : 0);
+  const wrap = document.createElement('div');
+  wrap.className = `avatar-frame-wrap ${sizeClass}`;
+  avatarEl.parentNode.insertBefore(wrap, avatarEl);
+  wrap.appendChild(avatarEl);
+  const builder = FRAMES[rank.key];
+  if (builder) {
+    const ns = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(ns, 'svg');
+    svg.setAttribute('viewBox', '0 0 128 128');
+    svg.setAttribute('xmlns', ns);
+    svg.className = `rank-frame-svg fr-${rank.key}`;
+    svg.setAttribute('aria-hidden', 'true');
+    svg.innerHTML = builder();
+    wrap.appendChild(svg);
+  }
+  const pill = document.createElement('div');
+  pill.className = `rank-pill-badge rk-${rank.key}`;
+  pill.textContent = rank.label;
+  wrap.appendChild(pill);
+}
+
+/* ══════════════════
+   CREATOR POINTS LOOKUP + FRAME REFRESH
+══════════════════ */
+function lookupCreatorPts(creatorId, creatorName) {
+  // Check friends cache first (has full user objects with solver_points, creator_points)
+  if (creatorId && allFriends.length) {
+    const f = allFriends.find(u => u._id === creatorId);
+    if (f) return uPts(f);
+  }
+  // Then check leaderboard cache (has name, solver_points, creator_points)
+  if (creatorName && allUsersCache && allUsersCache.length) {
+    const u = allUsersCache.find(x => x.name === creatorName);
+    if (u) return Math.round((u.solver_points||0) + (u.creator_points||0));
+  }
+  return 0;
+}
+
+function updateRankFrame(avatarEl, points, sizeClass) {
+  if (!avatarEl) return;
+  const oldWrap = avatarEl.closest('.avatar-frame-wrap');
+  if (oldWrap) {
+    oldWrap.parentNode.insertBefore(avatarEl, oldWrap);
+    oldWrap.remove();
+  }
+  attachRankFrame(avatarEl, points, sizeClass);
+}
+
+function refreshCardFrames() {
+  document.querySelectorAll('.problem-card[data-creator-id]').forEach(card => {
+    const cid = card.dataset.creatorId;
+    const cname = card.dataset.creatorName || '';
+    const pts = lookupCreatorPts(cid, cname);
+    const avatarEl = card.querySelector('.author-avatar');
+    if (avatarEl) updateRankFrame(avatarEl, pts, 'afwsm');
+  });
+}
+
+/* ══════════════════
+   STATE
+══════════════════ */
+let me = null, allFriends = [], allUsersCache = null, lbLoaded = false;
+const DIFF_LABELS = {1:'Easy',2:'Fair',3:'Medium',4:'Hard',5:'Expert'};
+const state = {tab:'discover',sort:'new',topic:'',diff:'',page:1,loading:false,exhausted:false};
+
+/* ══════════════════
+   MOBILE PANELS
+══════════════════ */
+function toggleSidenav(){const n=document.getElementById('sidenav'),ov=document.getElementById('mobileOverlay');const o=n.classList.toggle('open');ov.classList.toggle('open',o);document.getElementById('friendsSidebar').classList.remove('open');}
+function toggleFriendsSidebar(){const s=document.getElementById('friendsSidebar'),ov=document.getElementById('mobileOverlay');const o=s.classList.toggle('open');ov.classList.toggle('open',o);document.getElementById('sidenav').classList.remove('open');}
+function closeAllPanels(){document.getElementById('sidenav').classList.remove('open');document.getElementById('friendsSidebar').classList.remove('open');document.getElementById('mobileOverlay').classList.remove('open');}
+
+/* ══════════════════
+   PAGE SWITCHING
+══════════════════ */
+function activatePage(page){
+  document.getElementById('page-explore').style.display = page==='explore'?'block':'none';
+  document.getElementById('page-leaderboard').classList.toggle('active', page==='leaderboard');
+  if(page==='leaderboard'){
+    setTimeout(()=>document.getElementById('peopleSearchInput')?.focus(),100);
+    loadLeaderboard();
+  }
+  closeAllPanels();
+}
+
+/* ══════════════════
+   LOAD ME
+══════════════════ */
+async function loadMe(){
+  try{
+    const r=await fetch('/api/profile/me',{credentials:'same-origin'});
+    if(r.status===401){window.location.href='/auth';return;}
+    const d=await r.json();if(!d.success)return;
+    me=d.user;
+    document.getElementById('navUserAvatar').textContent=(me.displayName||me.username||'?')[0].toUpperCase();
+    document.getElementById('navUserName').textContent=me.displayName||me.username;
+    document.getElementById('navUserPts').textContent=uPts(me);
+    document.getElementById('navUserCard').style.display='flex';
+    loadFriendsList();
+  }catch(e){console.error(e);}
+}
+
+/* ══════════════════
+   FRIENDS SIDEBAR
+══════════════════ */
+async function loadFriendsList(){
+  if(!me)return;
+  try{
+    const r=await fetch(`/api/users/${me._id}`,{credentials:'same-origin'});
+    const d=await r.json();if(!d.success)throw new Error();
+    const ids=d.user.following||[];
+    document.getElementById('friendsCount').textContent=ids.length;
+    if(!ids.length){
+      document.getElementById('friendsList').innerHTML=`<div class="friends-empty"><div class="friends-empty-icon">👥</div><p>Not following anyone yet.</p><button class="btn-discover" onclick="activatePage('leaderboard')">Find people</button></div>`;
+      refreshCardFrames();
+      loadSidebarLb();
+      return;
+    }
+    const settled=await Promise.allSettled(ids.slice(0,50).map(id=>fetch(`/api/users/${id}`,{credentials:'same-origin'}).then(x=>x.json())));
+    allFriends=settled.filter(x=>x.status==='fulfilled'&&x.value.success).map(x=>x.value.user);
+    renderFriends(allFriends);
+    refreshCardFrames();
+    loadSidebarLb();
+  }catch(e){
+    console.error(e);
+    document.getElementById('friendsList').innerHTML=`<div class="friends-empty"><p>Could not load.</p></div>`;
+    loadSidebarLb();
+  }
+}
+function renderFriends(list){
+  const el=document.getElementById('friendsList');
+  if(!list.length){el.innerHTML=`<div class="friends-empty"><p>No results.</p></div>`;return;}
+  const sorted=[...list].sort((a,b)=>uPts(b)-uPts(a));
+  el.innerHTML='';
+  sorted.forEach(u=>{
+    const p=uPts(u);
+    const row=document.createElement('div');
+    row.className='friend-item';
+    row.dataset.pts=p;
+    row.onclick=()=>goToUserProfile(u._id);
+    row.innerHTML=`
+      <div class="friend-avatar">${(u.displayName||u.username||'?')[0].toUpperCase()}</div>
+      <div class="friend-info">
+        <div class="friend-name">${esc(u.displayName||u.username)} <span>${CMAP[u.country]||''}</span></div>
+        <div class="friend-pts"><span class="friend-pts-val">${p} Elo</span> · ${ptsRank(p)}</div>
+      </div>`;
+    el.appendChild(row);
+    attachRankFrame(row.querySelector('.friend-avatar'), p, 'afwxs');
+  });
+}
+function filterFriends(q){const s=q.toLowerCase().trim();renderFriends(s?allFriends.filter(u=>(u.displayName||'').toLowerCase().includes(s)||(u.username||'').toLowerCase().includes(s)):allFriends);}
+
+/* ══════════════════
+   SIDEBAR LB
+══════════════════ */
+async function loadSidebarLb(){
+  try{
+    const r=await fetch('/api/leaderboard',{credentials:'same-origin'});
+    const d=await r.json();if(!d.success)return;
+    const top3=d.users.slice(0,3);if(!top3.length)return;
+    document.getElementById('sidebarLb').style.display='block';
+    const rc=['gold','silver','bronze'];
+    const el=document.getElementById('sidebarLbList');
+    el.innerHTML='';
+    top3.forEach((u,i)=>{
+      const p=Math.round((u.solver_points||0)+(u.creator_points||0));
+      const row=document.createElement('div');
+      row.className='lb-sidebar-row';
+      row.dataset.pts=p;
+      row.onclick=()=>goToUserProfileByName(u.name);
+      row.innerHTML=`
+        <div class="lb-sidebar-rank ${rc[i]}">${i+1}</div>
+        <div class="lb-sidebar-avatar">${(u.name||'?')[0].toUpperCase()}</div>
+        <div class="lb-sidebar-info"><div class="lb-sidebar-name">${esc(u.name)}</div><div class="lb-sidebar-pts">${p} Elo</div></div>`;
+      el.appendChild(row);
+      attachRankFrame(row.querySelector('.lb-sidebar-avatar'), p, 'afwxs');
+    });
+    refreshCardFrames();
+  }catch(e){console.error(e);}
+}
+
+/* ══════════════════
+   LEADERBOARD + SEARCH
+══════════════════ */
+async function loadLeaderboard(){
+  if(lbLoaded)return;
+  const el=document.getElementById('leaderboardList');
+  el.innerHTML=skels(3);
+  try{
+    const r=await fetch('/api/leaderboard',{credentials:'same-origin'});
+    const d=await r.json();if(!d.success)throw new Error();
+    lbLoaded=true;
+    allUsersCache=d.users;
+    refreshCardFrames();
+    renderLeaderboard(d.users.slice(0,10));
+  }catch{el.innerHTML=`<div class="feed-empty"><p>Failed to load.</p></div>`;}
+}
+function renderLeaderboard(users){
+  const el=document.getElementById('leaderboardList');
+  const medals=['🥇','🥈','🥉'];
+  const rc=i=>i===0?'gold':i===1?'silver':i===2?'bronze':'';
+  el.innerHTML='';
+  users.forEach((u,i)=>{
+    const p=Math.round((u.solver_points||0)+(u.creator_points||0));
+    const row=document.createElement('div');
+    row.className='lb-full-row';
+    row.style.animationDelay=`${i*0.04}s`;
+    row.dataset.pts=p;
+    row.onclick=()=>goToUserProfileByName(u.name);
+    row.innerHTML=`
+      <div class="lb-full-rank ${rc(i)}">${medals[i]||i+1}</div>
+      <div class="lb-full-avatar">${(u.name||'?')[0].toUpperCase()}</div>
+      <div class="lb-full-info">
+        <div class="lb-full-name">${esc(u.name)} ${CMAP[u.country]||''}</div>
+        <div class="lb-full-sub">${ptsRank(p)}</div>
+      </div>
+      <div class="lb-full-pts">${p} Elo</div>`;
+    el.appendChild(row);
+    attachRankFrame(row.querySelector('.lb-full-avatar'), p, 'afwmd');
+  });
+}
+
+let searchTimer=null;
+function debouncedSearch(val){clearTimeout(searchTimer);searchTimer=setTimeout(()=>doSearch(val),250);}
+function doSearch(q){
+  const wrap=document.getElementById('lb-top-wrapper');
+  const res=document.getElementById('searchResults');
+  const list=document.getElementById('searchResultsList');
+  if(!q.trim()){wrap.style.display='block';res.style.display='none';return;}
+  if(!allUsersCache){loadLeaderboard().then(()=>doSearch(q));return;}
+  const filtered=allUsersCache.filter(u=>(u.name||'').toLowerCase().includes(q.toLowerCase()));
+  wrap.style.display='none';res.style.display='block';
+  list.innerHTML='';
+  if(!filtered.length){list.innerHTML=`<div class="feed-empty"><div class="feed-empty-icon">🔭</div><h3>No players found</h3></div>`;return;}
+  filtered.forEach((u,i)=>{
+    const p=Math.round((u.solver_points||0)+(u.creator_points||0));
+    const card=document.createElement('div');
+    card.className='user-result-card';
+    card.style.animationDelay=`${i*0.03}s`;
+    card.dataset.pts=p;
+    card.onclick=()=>goToUserProfileByName(u.name);
+    card.innerHTML=`
+      <div class="user-result-avatar">${(u.name||'?')[0].toUpperCase()}</div>
+      <div class="user-result-info">
+        <div class="user-result-name">${esc(u.name)} ${CMAP[u.country]||''}</div>
+        <div class="user-result-handle">@${esc((u.name||'').toLowerCase())}</div>
+        <div class="user-result-sub">${p} Elo · <span class="val">${ptsRank(p)}</span></div>
+      </div>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="14" height="14" style="color:var(--muted);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>`;
+    list.appendChild(card);
+    attachRankFrame(card.querySelector('.user-result-avatar'), p, 'afwmd');
+  });
+}
+
+/* ══════════════════
+   NAVIGATE TO USER PROFILE
+══════════════════ */
+function goToUserProfile(userId){
+  window.location.href=`/profile.html?id=${encodeURIComponent(userId)}`;
+}
+function goToUserProfileByName(name){
+  const friend=allFriends.find(f=>(f.displayName||f.username||'').toLowerCase()===name.toLowerCase());
+  if(friend){goToUserProfile(friend._id);return;}
+  window.location.href=`/profile.html?name=${encodeURIComponent(name)}`;
+}
+
+/* ══════════════════
+   TAB / FILTER
+══════════════════ */
+function switchTab(t){state.tab=t;document.getElementById('tab-discover').classList.toggle('active',t==='discover');document.getElementById('tab-friends').classList.toggle('active',t==='friends');document.getElementById('filtersWrap').style.display=t==='discover'?'block':'none';reset();}
+let filtersOpen=false;
+function toggleFilters(){filtersOpen=!filtersOpen;document.getElementById('filtersPanel').classList.toggle('open',filtersOpen);document.getElementById('filtersToggle').classList.toggle('open',filtersOpen);}
+function setFilter(type,val,btn){const rows={sort:'sortRow',topic:'topicRow',diff:'diffRow'};document.querySelectorAll(`#${rows[type]} .filter-chip`).forEach(c=>c.classList.remove('active'));btn.classList.add('active');state[type]=val;document.getElementById('activeFilterBadge').style.display=((state.sort!=='new')||state.topic||state.diff)?'inline':'none';reset();}
+
+/* ══════════════════
+   FEED
+══════════════════ */
+function reset(){state.page=1;state.exhausted=false;document.getElementById('feed').innerHTML='';document.getElementById('loadMoreBtn').style.display='none';loadFeed(true);}
+async function loadFeed(initial=false){
+  if(state.loading||state.exhausted)return;
+  state.loading=true;
+  const feed=document.getElementById('feed');
+  if(initial)feed.innerHTML=skels(3);
+  try{
+    let r,d;
+    if(state.tab==='friends'){
+      r=await fetch(`/api/explore/friends?page=${state.page}&limit=10`,{credentials:'same-origin'});
+      d=await r.json();
+      if(initial)feed.innerHTML='';
+      if(d.empty||!d.problems?.length){if(initial)feed.innerHTML=friendsEmpty();state.exhausted=true;}
+      else{addCards(d.problems,feed,initial?0:state.page*10);paginate(d.pagination);}
+    }else{
+      const p=new URLSearchParams({page:state.page,limit:10,sort:state.sort});
+      if(state.topic)p.set('topic',state.topic);
+      if(state.diff)p.set('difficulty',state.diff);
+      r=await fetch(`/challenges/explore?${p}`,{credentials:'same-origin'});
+      if(r.status===401){window.location.href='/auth';return;}
+      d=await r.json();
+      if(initial)feed.innerHTML='';
+      if(!d.problems?.length){if(initial)feed.innerHTML=discoverEmpty();state.exhausted=true;}
+      else{addCards(d.problems,feed,initial?0:state.page*10);paginate(d.pagination);}
+    }
+    // After feed renders, try refreshing frames if caches are already populated
+    if(initial) refreshCardFrames();
+  }catch(err){if(initial)feed.innerHTML=`<div class="feed-empty"><p>Failed to load</p></div>`;console.error(err);}
+  finally{state.loading=false;}
+}
+function loadMore(){state.page++;loadFeed(false);}
+function paginate(pg){state.page=pg.page;const has=pg.page<pg.pages;document.getElementById('loadMoreBtn').style.display=has?'block':'none';state.exhausted=!has;}
+
+/* ══════════════════
+   BUILD CARD
+   Uses lookupCreatorPts to find the correct points from
+   friends cache / leaderboard cache instead of reading
+   nonexistent fields from the problem object.
+   Stores creator id + name as data-attrs for later refresh.
+══════════════════ */
+function addCards(problems, feed, startDelay=0){
+  problems.forEach((p,i)=>{
+    const card=buildCard(p);
+    card.style.animationDelay=`${(i+startDelay)*0.04}s`;
+    feed.appendChild(card);
+  });
+  feed.querySelectorAll('.math-display:not(.rendered)').forEach(el=>{
+    el.classList.add('rendered');
+    try{el.innerHTML=katex.renderToString(el.dataset.latex||'',{displayMode:true,throwOnError:false});}
+    catch{el.textContent=el.dataset.latex||'';}
+  });
+}
+
+function buildCard(p){
+  const creatorPts = lookupCreatorPts(p.creator_id, p.creator_name);
+
+  const el = document.createElement('div');
+  el.className = 'problem-card';
+  el.dataset.id = p._id;
+  el.dataset.creatorId = p.creator_id || '';
+  el.dataset.creatorName = esc(p.creator_name || '');
+
+  const initials = (p.creator_name||'?')[0].toUpperCase();
+  const topicLabel = (p.topic||'').replace('_',' ');
+
+  const solvedBtn = p.user_solved
+    ? `<button class="action-btn solved" onclick="event.stopPropagation()">✓ Solved</button>`
+    : `<button class="btn-solve" onclick="event.stopPropagation();navigateToCard('${p._id}')">Solve →</button>`;
+
+  el.innerHTML = `
+    <div class="card-header">
+      <div class="card-author" onclick="event.stopPropagation();goToUserProfile('${esc(p.creator_id)}')">
+        <div class="author-avatar">${initials}</div>
+        <div>
+          <div class="author-name">${esc(p.creator_name)}</div>
+          <div class="author-handle">@${esc((p.creator_name||'').toLowerCase().replace(/\s+/g,'_'))} · ${relTime(p.createdAt)}</div>
+        </div>
+      </div>
+      <div class="card-badges">
+        <span class="badge badge-topic">${esc(topicLabel)}</span>
+        <span class="badge badge-diff-${p.difficulty}">${DIFF_LABELS[p.difficulty]||p.difficulty}</span>
+      </div>
+    </div>
+    <div class="card-problem">
+      <div class="math-display" data-latex="${esc(p.problem_text?.latex||'')}"></div>
+    </div>
+    <div class="card-footer">
+      <div class="card-stats">
+        <span class="stat-pill" title="Views">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span id="vc-${p._id}">${p.view_count??0}</span>
+        </span>
+        <span class="stat-pill">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+          ${p.total_attempts??0}
+        </span>
+        <span class="stat-pill" style="color:var(--accent);">${p.total_attempts?Math.round(p.correct_attempts/p.total_attempts*100):0}%</span>
+      </div>
+      <div class="card-actions">
+        <button class="action-btn ${p.user_upvoted?'upvoted':''}" id="uv-${p._id}" onclick="event.stopPropagation();toggleUpvote('${p._id}',this)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/><path d="M7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+          <span id="uc-${p._id}">${p.upvotes??0}</span>
+        </button>
+        ${solvedBtn}
+      </div>
+    </div>`;
+
+  const avatarEl = el.querySelector('.author-avatar');
+  attachRankFrame(avatarEl, creatorPts, 'afwsm');
+
+  el.addEventListener('click', ()=>navigateToCard(p._id));
+  return el;
+}
+
+async function navigateToCard(id){
+  fetch(`/challenges/problems/${id}/view`,{method:'POST',credentials:'same-origin'}).catch(()=>{});
+  const vc=document.getElementById(`vc-${id}`);
+  if(vc) vc.textContent=(parseInt(vc.textContent)||0)+1;
+  window.location.href=`/problem?id=${id}`;
+}
+async function toggleUpvote(id,btn){
+  try{
+    const r=await fetch(`/challenges/problems/${id}/upvote`,{method:'POST',credentials:'same-origin'});
+    const d=await r.json();
+    if(r.ok){document.getElementById(`uc-${id}`).textContent=d.upvotes;btn.classList.toggle('upvoted',d.action==='added');}
+  }catch{showToast('Failed to upvote','error');}
+}
+
+/* ══════════════════
+   EMPTY / SKELETON
+══════════════════ */
+function friendsEmpty(){return`<div class="feed-empty"><div class="feed-empty-icon">👥</div><h3>No posts from following yet</h3><p>Follow people to see their problems here.</p><button class="btn-discover" onclick="activatePage('leaderboard')">Find people</button></div>`;}
+function discoverEmpty(){return`<div class="feed-empty"><div class="feed-empty-icon">🔭</div><h3>Nothing found</h3><p>Try different filters.</p></div>`;}
+
+/* ══════════════════
+   STARFIELD
+══════════════════ */
+const canvas=document.getElementById('starfield');const ctx=canvas.getContext('2d');let stars=[];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+class Star{constructor(){this.reset()}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*1.6;this.opacity=Math.random();this.speed=Math.random()*0.012+0.003;this.dir=Math.random()>.5?1:-1;}draw(){this.opacity+=this.speed*this.dir;if(this.opacity>1||this.opacity<0)this.dir*=-1;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${Math.abs(this.opacity)})`;ctx.fill();}}
+function initStars(){stars=[];const n=Math.floor((canvas.width*canvas.height)/3200);for(let i=0;i<n;i++)stars.push(new Star());}
+function animateStars(){ctx.clearRect(0,0,canvas.width,canvas.height);stars.forEach(s=>s.draw());requestAnimationFrame(animateStars);}
+window.addEventListener('resize',()=>{resizeCanvas();initStars();});
+resizeCanvas();initStars();animateStars();
+
+loadMe();
+loadFeed(true);
+</script>
+</body>
+</html>

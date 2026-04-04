@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Problem – Astrophiles</title>
+  <link rel="icon" href="logo.png" type="image/png">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+  <style>
+    :root{--bg:#05080f;--fg:#e8edf5;--muted:#7a8599;--accent:#f3d13b;--accent-glow:rgba(243,209,59,0.3);--accent-dim:rgba(243,209,59,0.08);--card:rgba(12,18,32,0.8);--border:rgba(122,133,153,0.18);--error:#ff4757;--success:#2ed573;--border-focus:rgba(243,209,59,0.5);}
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg);color:var(--fg);min-height:100vh;overflow-x:hidden;}
+    #starfield{position:fixed;inset:0;z-index:0;pointer-events:none;}
+    .nebula{position:fixed;border-radius:50%;filter:blur(90px);opacity:0.1;pointer-events:none;z-index:0;animation:drift 22s ease-in-out infinite alternate;}
+    .nebula-1{width:500px;height:500px;background:radial-gradient(circle,#f3d13b,transparent 70%);top:-150px;left:-100px;}
+    .nebula-2{width:400px;height:400px;background:radial-gradient(circle,#00e5ff,transparent 70%);bottom:-80px;right:-80px;animation-delay:-9s;}
+    @keyframes drift{from{transform:translate(0,0) scale(1)}to{transform:translate(25px,18px) scale(1.06)}}
+    .grid-overlay{position:fixed;inset:0;z-index:0;pointer-events:none;background-image:linear-gradient(rgba(243,209,59,0.025) 1px,transparent 1px),linear-gradient(90deg,rgba(243,209,59,0.025) 1px,transparent 1px);background-size:60px 60px;}
+    .page{position:relative;z-index:1;max-width:680px;margin:0 auto;padding:0 1rem 5rem;}
+
+    /* NAV */
+    .top-nav{position:sticky;top:0;z-index:50;background:rgba(5,8,15,0.85);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);padding:0.9rem 1rem;margin:0 -1rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+    .nav-logo{font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--accent);text-decoration:none;display:flex;align-items:center;gap:7px;}
+    .nav-logo-mark{width:26px;height:26px;background:linear-gradient(135deg,var(--accent),#d4851a);border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:800;color:#05080f;}
+    .nav-back{display:flex;align-items:center;gap:5px;color:var(--muted);text-decoration:none;font-size:0.85rem;transition:color 0.2s;}
+    .nav-back:hover{color:var(--accent);}
+    .nav-back svg{width:14px;height:14px;}
+
+    /* CARDS */
+    .card{background:var(--card);backdrop-filter:blur(16px) saturate(1.3);border:1px solid var(--border);border-radius:18px;margin-top:1.25rem;overflow:hidden;animation:cardIn 0.45s cubic-bezier(0.16,1,0.3,1) both;}
+    .card:nth-child(2){animation-delay:0.08s;}
+    .card:nth-child(3){animation-delay:0.16s;}
+    @keyframes cardIn{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+
+    /* PROBLEM CARD */
+    .problem-header{padding:1.1rem 1.4rem 0.75rem;display:flex;align-items:center;justify-content:space-between;}
+    .author-row{display:flex;align-items:center;gap:8px;}
+    .author-avatar{width:34px;height:34px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.8rem;color:var(--accent);}
+    .author-name{font-size:0.85rem;font-weight:600;}
+    .author-meta{font-size:0.72rem;color:var(--muted);}
+    .badge-row{display:flex;gap:5px;}
+    .badge{padding:3px 8px;border-radius:6px;font-size:0.7rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;}
+    .badge-topic{background:rgba(0,229,255,0.1);color:#00e5ff;border:1px solid rgba(0,229,255,0.2);}
+    .badge-diff-1,.badge-diff-2{background:rgba(46,213,115,0.1);color:#2ed573;border:1px solid rgba(46,213,115,0.2);}
+    .badge-diff-3{background:rgba(243,209,59,0.1);color:var(--accent);border:1px solid rgba(243,209,59,0.2);}
+    .badge-diff-4{background:rgba(255,165,2,0.1);color:#ffa502;border:1px solid rgba(255,165,2,0.2);}
+    .badge-diff-5{background:rgba(255,71,87,0.1);color:var(--error);border:1px solid rgba(255,71,87,0.2);}
+
+    .problem-body{padding:0.25rem 1.4rem 1.1rem;}
+    .math-display{background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:12px;padding:1.1rem 1.25rem;overflow-x:auto;text-align:center;font-size:1.1rem;}
+    .problem-stats{display:flex;gap:1.25rem;padding:0.9rem 1.4rem;border-top:1px solid var(--border);}
+    .stat-item{display:flex;align-items:center;gap:5px;font-size:0.78rem;color:var(--muted);}
+    .stat-item svg{width:13px;height:13px;}
+    .stat-item strong{color:var(--fg);font-weight:600;}
+
+    /* SOLVE CARD */
+    .card-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;padding:1.1rem 1.4rem 0.75rem;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;}
+    .solve-body{padding:1.1rem 1.4rem;}
+
+    /* result panels */
+    .result-panel{display:none;border-radius:12px;padding:1.1rem;margin-top:1rem;}
+    .result-panel.visible{display:block;animation:fadeIn 0.4s ease both;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .result-correct{background:rgba(46,213,115,0.08);border:1px solid rgba(46,213,115,0.25);}
+    .result-wrong{background:rgba(255,71,87,0.08);border:1px solid rgba(255,71,87,0.2);}
+    .result-title{font-family:'Syne',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;}
+    .result-correct .result-title{color:var(--success);}
+    .result-wrong .result-title{color:var(--error);}
+    .result-points{font-size:0.85rem;color:var(--muted);margin-bottom:0.75rem;}
+    .result-answer-label{font-size:0.75rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.4rem;}
+    .result-answer-math{background:rgba(5,8,15,0.4);border:1px solid var(--border);border-radius:9px;padding:0.7rem 1rem;overflow-x:auto;text-align:center;}
+    .result-explanation{margin-top:0.75rem;font-size:0.85rem;line-height:1.65;color:var(--fg);opacity:0.85;}
+
+    /* Explanation textarea */
+    .optional-label{font-size:0.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin:1rem 0 0.4rem;display:block;}
+    .form-input{width:100%;padding:0.7rem 1rem;background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:11px;color:var(--fg);font-size:0.88rem;font-family:'DM Sans',sans-serif;transition:all 0.22s;outline:none;resize:vertical;}
+    .form-input:focus{border-color:var(--border-focus);box-shadow:0 0 0 3px rgba(243,209,59,0.07);}
+    .form-input::placeholder{color:rgba(122,133,153,0.4);}
+
+    /* Submit */
+    .btn-submit{width:100%;padding:0.85rem;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-weight:700;font-size:0.95rem;font-family:'Syne',sans-serif;border:none;border-radius:12px;cursor:pointer;transition:all 0.3s cubic-bezier(0.34,1.56,0.64,1);display:flex;align-items:center;justify-content:center;gap:8px;margin-top:1rem;}
+    .btn-submit:hover{transform:translateY(-2px);box-shadow:0 10px 28px var(--accent-glow);}
+    .btn-submit:disabled{opacity:0.55;cursor:not-allowed;transform:none;}
+    .btn-ghost{width:100%;padding:0.75rem;background:transparent;border:1px solid var(--border);border-radius:12px;color:var(--muted);font-size:0.88rem;font-weight:600;cursor:pointer;transition:all 0.2s;margin-top:0.6rem;}
+    .btn-ghost:hover{color:var(--fg);border-color:rgba(122,133,153,0.4);}
+
+    /* LEADERBOARD */
+    .solver-row{display:flex;align-items:center;gap:10px;padding:0.65rem 1.4rem;border-top:1px solid var(--border);transition:background 0.15s;}
+    .solver-row:hover{background:rgba(255,255,255,0.02);}
+    .solver-rank{width:24px;text-align:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.85rem;color:var(--muted);flex-shrink:0;}
+    .solver-rank.gold{color:#f3d13b;}
+    .solver-rank.silver{color:#94a3b8;}
+    .solver-rank.bronze{color:#cd7c3a;}
+    .solver-avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:700;font-size:0.7rem;color:var(--accent);flex-shrink:0;}
+    .solver-name{flex:1;font-size:0.85rem;font-weight:600;}
+    .solver-pts{font-size:0.78rem;color:var(--accent);font-weight:600;}
+    .solver-time{font-size:0.72rem;color:var(--muted);}
+
+    /* Empty leaderboard */
+    .lb-empty{padding:1.5rem;text-align:center;color:var(--muted);font-size:0.85rem;}
+
+    /* Report link */
+    .report-link{display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;color:var(--muted);cursor:pointer;padding:0.5rem 0;text-decoration:none;transition:color 0.2s;border:none;background:none;}
+    .report-link:hover{color:var(--error);}
+    .report-link svg{width:12px;height:12px;}
+
+    /* Toast */
+    .toast-container{position:fixed;top:70px;right:20px;z-index:200;display:flex;flex-direction:column;gap:8px;}
+    .toast{min-width:240px;padding:0.8rem 1rem;background:rgba(12,18,32,0.97);border:1px solid var(--border);border-left:4px solid var(--accent);color:var(--fg);border-radius:10px;transform:translateX(120%);transition:transform 0.35s cubic-bezier(0.34,1.56,0.64,1);backdrop-filter:blur(12px);font-size:0.85rem;display:flex;align-items:center;gap:0.5rem;box-shadow:0 8px 24px rgba(0,0,0,0.4);}
+    .toast.show{transform:translateX(0);}
+    .toast.success{border-left-color:var(--success);}
+    .toast.error{border-left-color:var(--error);}
+
+    /* Math keyboard embed */
+    .mk-wrap{background:rgba(5,8,15,0.6);border:1px solid var(--border);border-radius:14px;overflow:hidden;}
+    .mk-preview{min-height:60px;padding:0.85rem 1rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:center;overflow-x:auto;font-size:1.05rem;background:rgba(5,8,15,0.3);}
+    .mk-preview-placeholder{color:var(--muted);font-size:0.85rem;font-style:italic;}
+    .mk-latex-input{width:100%;padding:0.6rem 1rem;background:transparent;border:none;border-bottom:1px solid var(--border);color:var(--fg);font-size:0.82rem;font-family:'Courier New',monospace;outline:none;}
+    .mk-latex-input::placeholder{color:rgba(122,133,153,0.4);}
+    .mk-tabs{display:flex;border-bottom:1px solid var(--border);}
+    .mk-tab{flex:1;padding:0.45rem;text-align:center;font-size:0.72rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--muted);border:none;background:transparent;cursor:pointer;transition:all 0.2s;border-bottom:2px solid transparent;}
+    .mk-tab.active{color:var(--accent);border-bottom-color:var(--accent);background:var(--accent-dim);}
+    .mk-panel{display:none;}
+    .mk-panel.active{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:0.5rem;}
+    .mk-key{padding:0.5rem 0.25rem;background:rgba(12,18,32,0.8);border:1px solid var(--border);border-radius:7px;color:var(--fg);font-size:0.82rem;cursor:pointer;transition:all 0.15s;text-align:center;min-height:38px;display:flex;align-items:center;justify-content:center;user-select:none;}
+    .mk-key:hover{background:rgba(243,209,59,0.1);border-color:rgba(243,209,59,0.3);color:var(--accent);transform:translateY(-1px);}
+    .mk-key.mk-key-wide{grid-column:span 2;}
+    .mk-key.mk-key-clear{background:rgba(255,71,87,0.08);border-color:rgba(255,71,87,0.2);color:#ff4757;}
+    .mk-key.mk-key-delete{background:rgba(122,133,153,0.08);border-color:rgba(122,133,153,0.2);color:var(--muted);}
+
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spin{animation:spin 0.8s linear infinite;display:inline-block;vertical-align:middle;}
+
+    .skeleton-line{background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%);background-size:200% 100%;animation:shimmer 1.4s infinite;border-radius:5px;}
+    @keyframes shimmer{to{background-position:-200% 0}}
+  </style>
+</head>
+
+<body>
+<canvas id="starfield"></canvas>
+<div class="nebula nebula-1"></div>
+<div class="nebula nebula-2"></div>
+<div class="grid-overlay"></div>
+<div class="toast-container" id="toastContainer"></div>
+
+<div class="page">
+  <!-- Nav -->
+  <nav class="top-nav">
+    <a href="/" class="nav-logo"><div class="nav-logo-mark">✦</div>Astrophiles</a>
+    <a href="/explore" class="nav-back">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Explore
+    </a>
+  </nav>
+
+  <!-- Problem card -->
+  <div class="card" id="problemCard">
+    <div class="problem-header">
+      <div class="author-row">
+        <div class="author-avatar" id="authorAvatar">?</div>
+        <div>
+          <div class="author-name" id="authorName"><span class="skeleton-line" style="width:100px;height:13px;display:inline-block;"></span></div>
+          <div class="author-meta" id="authorMeta">loading…</div>
+        </div>
+      </div>
+      <div class="badge-row" id="badgeRow"></div>
+    </div>
+    <div class="problem-body">
+      <div class="math-display" id="problemDisplay">
+        <span class="skeleton-line" style="width:200px;height:40px;display:inline-block;"></span>
+      </div>
+    </div>
+    <div class="problem-stats" id="problemStats"></div>
+  </div>
+
+  <!-- Solve card -->
+  <div class="card" id="solveCard">
+    <div class="card-title">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+      Your Answer
+    </div>
+    <div class="solve-body">
+      <!-- Math keyboard -->
+      <div class="mk-wrap">
+        <div class="mk-preview" id="mk-preview"><span class="mk-preview-placeholder">Your answer will appear here…</span></div>
+        <input type="text" class="mk-latex-input" id="mk-input" placeholder="Type LaTeX or use the keyboard…" oninput="mkOnInput(this.value)" autocomplete="off" spellcheck="false">
+        <div class="mk-tabs">
+          <button class="mk-tab active" onclick="mkTab(this,'basic')">Basic</button>
+          <button class="mk-tab" onclick="mkTab(this,'algebra')">Algebra</button>
+          <button class="mk-tab" onclick="mkTab(this,'calculus')">Calculus</button>
+          <button class="mk-tab" onclick="mkTab(this,'controls')">⌫</button>
+        </div>
+        <div class="mk-panel active" id="mk-panel-basic">
+          <button class="mk-key" onclick="mkIns('7')">7</button><button class="mk-key" onclick="mkIns('8')">8</button><button class="mk-key" onclick="mkIns('9')">9</button><button class="mk-key" onclick="mkIns('+')">+</button><button class="mk-key" onclick="mkIns('-')">−</button>
+          <button class="mk-key" onclick="mkIns('4')">4</button><button class="mk-key" onclick="mkIns('5')">5</button><button class="mk-key" onclick="mkIns('6')">6</button><button class="mk-key" onclick="mkIns('\\times ')">×</button><button class="mk-key" onclick="mkIns('\\div ')">÷</button>
+          <button class="mk-key" onclick="mkIns('1')">1</button><button class="mk-key" onclick="mkIns('2')">2</button><button class="mk-key" onclick="mkIns('3')">3</button><button class="mk-key" onclick="mkIns('(')">( </button><button class="mk-key" onclick="mkIns(')')"> )</button>
+          <button class="mk-key" onclick="mkIns('0')">0</button><button class="mk-key" onclick="mkIns('.')">.</button><button class="mk-key" onclick="mkIns('\\pi ')">π</button><button class="mk-key" onclick="mkIns('=')"> = </button><button class="mk-key" onclick="mkIns('\\infty ')">∞</button>
+          <button class="mk-key" onclick="mkIns('x')">x</button><button class="mk-key" onclick="mkIns('y')">y</button><button class="mk-key" onclick="mkIns('z')">z</button><button class="mk-key" onclick="mkIns('n')">n</button><button class="mk-key" onclick="mkIns('t')">t</button>
+        </div>
+        <div class="mk-panel" id="mk-panel-algebra">
+          <button class="mk-key" onclick="mkIns('\\frac{}{}')">a/b</button><button class="mk-key" onclick="mkIns('\\sqrt{}')">√x</button><button class="mk-key" onclick="mkIns('^{2}')">x²</button><button class="mk-key" onclick="mkIns('^{3}')">x³</button><button class="mk-key" onclick="mkIns('^{}')">xⁿ</button>
+          <button class="mk-key" onclick="mkIns('_{}')">x₀</button><button class="mk-key" onclick="mkIns('\\sqrt[3]{}')">∛</button><button class="mk-key" onclick="mkIns('|')">|x|</button><button class="mk-key" onclick="mkIns('\\pm ')">±</button><button class="mk-key" onclick="mkIns('\\neq ')">≠</button>
+          <button class="mk-key" onclick="mkIns('\\leq ')">≤</button><button class="mk-key" onclick="mkIns('\\geq ')">≥</button><button class="mk-key" onclick="mkIns('\\log ')">log</button><button class="mk-key" onclick="mkIns('\\ln ')">ln</button><button class="mk-key" onclick="mkIns('e^{}')">eˣ</button>
+          <button class="mk-key" onclick="mkIns('\\sin ')">sin</button><button class="mk-key" onclick="mkIns('\\cos ')">cos</button><button class="mk-key" onclick="mkIns('\\tan ')">tan</button><button class="mk-key" onclick="mkIns('\\alpha ')">α</button><button class="mk-key" onclick="mkIns('\\theta ')">θ</button>
+          <button class="mk-key" onclick="mkIns('\\pi ')">π</button><button class="mk-key" onclick="mkIns('\\approx ')">≈</button><button class="mk-key" onclick="mkIns('\\beta ')">β</button><button class="mk-key" onclick="mkIns('\\lambda ')">λ</button><button class="mk-key" onclick="mkIns('+ C')">+C</button>
+        </div>
+        <div class="mk-panel" id="mk-panel-calculus">
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\frac{d}{dx}')">d/dx</button><button class="mk-key mk-key-wide" onclick="mkIns('\\frac{d^{2}}{dx^{2}}')">d²/dx²</button><button class="mk-key" onclick="mkIns('\\partial ')">∂</button>
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\int ')">∫ dx</button><button class="mk-key mk-key-wide" onclick="mkIns('\\int_{0}^{}')">∫ᵃᵇ</button><button class="mk-key" onclick="mkIns('\\,dx')">dx</button>
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\lim_{x \\to }')">lim x→</button><button class="mk-key mk-key-wide" onclick="mkIns('\\lim_{x \\to \\infty}')">lim→∞</button><button class="mk-key" onclick="mkIns('\\to ')">→</button>
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\sum_{i=1}^{n}')">Σ</button><button class="mk-key mk-key-wide" onclick="mkIns('\\prod_{i=1}^{n}')">Π</button><button class="mk-key" onclick="mkIns('\\nabla ')">∇</button>
+        </div>
+        <div class="mk-panel" id="mk-panel-controls">
+          <button class="mk-key mk-key-delete mk-key-wide" onclick="mkBackspace()">⌫ Delete</button><button class="mk-key mk-key-clear mk-key-wide" onclick="mkClear()">✕ Clear</button><button class="mk-key" onclick="mkIns(' ')">Space</button>
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\left(')">( big</button><button class="mk-key mk-key-wide" onclick="mkIns('\\right)')">big )</button><button class="mk-key" onclick="mkIns('\\cdot ')">·</button>
+          <button class="mk-key mk-key-wide" onclick="mkIns('\\left[')">[ big</button><button class="mk-key mk-key-wide" onclick="mkIns('\\right]')">big ]</button><button class="mk-key" onclick="mkIns('\\pm ')">±</button>
+        </div>
+      </div>
+
+      <!-- Optional explanation -->
+      <label class="optional-label">Explanation <span style="font-weight:400;text-transform:none;letter-spacing:0;font-size:0.72rem;">optional — earn +15 pts</span></label>
+      <textarea class="form-input" id="solverExplanation" placeholder="How did you solve it? (optional, earns bonus points)" rows="2"></textarea>
+
+      <!-- Result panels -->
+      <div class="result-panel result-correct" id="resultCorrect">
+        <div class="result-title">✓ Correct!</div>
+        <div class="result-points" id="resultPoints"></div>
+        <div class="result-answer-label">Correct Answer</div>
+        <div class="result-answer-math" id="resultAnswer"></div>
+        <div class="result-explanation" id="resultExplanation"></div>
+      </div>
+      <div class="result-panel result-wrong" id="resultWrong">
+        <div class="result-title">✗ Not quite</div>
+        <div class="result-points" id="resultWrongPoints"></div>
+        <p style="font-size:0.85rem;color:var(--muted);">Check your work and try again.</p>
+      </div>
+
+      <!-- Buttons -->
+      <button class="btn-submit" id="submitBtn" onclick="submitAnswer()">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><polyline points="20 6 9 17 4 12"/></svg>
+        Submit Answer
+      </button>
+      <button class="btn-ghost" id="upvoteBtn" onclick="upvoteProblem()">
+        ▲ Upvote this problem
+      </button>
+      <div style="text-align:center;margin-top:0.5rem;">
+        <button class="report-link" onclick="showReportModal()">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+          Report problem
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaderboard card -->
+  <div class="card" id="leaderboardCard">
+    <div class="card-title">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      Solvers
+    </div>
+    <div id="solversList"><div class="lb-empty">Loading…</div></div>
+  </div>
+
+</div>
+
+<!-- Report modal (simple inline) -->
+<div id="reportModal" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.6);backdrop-filter:blur(4px);align-items:center;justify-content:center;">
+  <div style="background:#0c1220;border:1px solid var(--border);border-radius:16px;padding:1.5rem;max-width:340px;width:90%;animation:cardIn 0.3s cubic-bezier(0.16,1,0.3,1) both;">
+    <h3 style="font-family:'Syne',sans-serif;font-weight:700;margin-bottom:1rem;">Report Problem</h3>
+    <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:1.25rem;" id="reportOptions">
+      <button class="report-opt" onclick="submitReport('spam')">Spam</button>
+      <button class="report-opt" onclick="submitReport('incorrect_answer')">Incorrect answer</button>
+      <button class="report-opt" onclick="submitReport('misleading')">Misleading</button>
+      <button class="report-opt" onclick="submitReport('duplicate')">Duplicate problem</button>
+      <button class="report-opt" onclick="submitReport('inappropriate')">Inappropriate</button>
+    </div>
+    <button onclick="hideReportModal()" style="width:100%;padding:0.6rem;background:transparent;border:1px solid var(--border);border-radius:9px;color:var(--muted);cursor:pointer;font-size:0.85rem;">Cancel</button>
+  </div>
+</div>
+<style>
+  .report-opt{padding:0.6rem 1rem;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:9px;color:var(--fg);font-size:0.85rem;cursor:pointer;text-align:left;transition:all 0.15s;}
+  .report-opt:hover{background:rgba(255,71,87,0.1);border-color:rgba(255,71,87,0.3);color:var(--error);}
+  #reportModal.open{display:flex;}
+</style>
+
+<script>
+// ══════════════════════════════════════════
+// LOAD PROBLEM
+// ══════════════════════════════════════════
+const problemId = new URLSearchParams(window.location.search).get('id');
+let problemData = null;
+
+async function loadProblem() {
+  if (!problemId) { window.location.href = '/explore'; return; }
+  try {
+    const res  = await fetch(`/challenges/problems/${problemId}`, { credentials:'same-origin' });
+    if (res.status === 401) { window.location.href = '/auth'; return; }
+    if (res.status === 404) { window.location.href = '/explore'; return; }
+    const data = await res.json();
+    problemData = data.problem;
+    renderProblem(data.problem);
+    loadSolvers();
+  } catch(err) { console.error(err); }
+}
+
+function renderProblem(p) {
+  document.title = `Problem – Astrophiles`;
+  const DIFF_LABELS = {1:'Beginner',2:'Easy',3:'Medium',4:'Hard',5:'Expert'};
+
+  document.getElementById('authorAvatar').textContent = (p.creator_name||'?')[0].toUpperCase();
+  document.getElementById('authorName').textContent   = p.creator_name || 'Unknown';
+  document.getElementById('authorMeta').textContent   = relativeTime(p.createdAt);
+
+  document.getElementById('badgeRow').innerHTML = `
+    <span class="badge badge-topic">${esc(p.topic.replace('_',' '))}</span>
+    <span class="badge badge-diff-${p.difficulty}">${DIFF_LABELS[p.difficulty]||p.difficulty}</span>
+  `;
+
+  const display = document.getElementById('problemDisplay');
+  try {
+    display.innerHTML = katex.renderToString(p.problem_text?.latex || '', { displayMode:true, throwOnError:false });
+  } catch {
+    display.textContent = p.problem_text?.latex || '';
+  }
+
+  const successPct = p.total_attempts ? Math.round((p.correct_attempts/p.total_attempts)*100) : 0;
+  document.getElementById('problemStats').innerHTML = `
+    <div class="stat-item"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg><strong>${p.total_attempts??0}</strong>&nbsp;attempts</div>
+    <div class="stat-item"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg><strong>${successPct}%</strong>&nbsp;success</div>
+    <div class="stat-item"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14z"/></svg><strong>${p.upvotes??0}</strong>&nbsp;upvotes</div>
+    <div class="stat-item"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>Difficulty&nbsp;<strong>${p.difficulty}/5</strong></div>
+  `;
+}
+
+// ══════════════════════════════════════════
+// SUBMIT ANSWER
+// ══════════════════════════════════════════
+let alreadySolved = false;
+
+async function submitAnswer() {
+  if (alreadySolved) return;
+  const latex = mkLatex.trim();
+  if (!latex) { showToast('Enter your answer first', 'error'); return; }
+
+  const btn  = document.getElementById('submitBtn');
+  const prev = btn.innerHTML;
+  btn.innerHTML = '<svg class="spin" xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg> Checking…';
+  btn.disabled  = true;
+
+  try {
+    const res  = await fetch(`/challenges/problems/${problemId}/attempt`, {
+      method:'POST', credentials:'same-origin',
+      headers:{ 'Content-Type':'application/json' },
+      body: JSON.stringify({ answer_latex: latex, explanation: document.getElementById('solverExplanation').value.trim() }),
+    });
+    const data = await res.json();
+
+    if (res.status === 409) { showToast("You've already solved this!", 'success'); return; }
+    if (!res.ok) { showToast(data.message || 'Error submitting answer', 'error'); btn.innerHTML = prev; btn.disabled = false; return; }
+
+    if (data.correct) {
+      alreadySolved = true;
+      document.getElementById('resultPoints').textContent = `+${data.solver_delta} points earned`;
+      const answerEl = document.getElementById('resultAnswer');
+      try { answerEl.innerHTML = katex.renderToString(data.correct_answer || '', { displayMode:true, throwOnError:false }); }
+      catch { answerEl.textContent = data.correct_answer || ''; }
+      document.getElementById('resultExplanation').textContent = data.explanation ? `Solution: ${data.explanation}` : '';
+      document.getElementById('resultCorrect').classList.add('visible');
+      document.getElementById('resultWrong').classList.remove('visible');
+      btn.textContent = '✓ Solved!'; btn.disabled = true;
+      btn.style.background = 'linear-gradient(135deg,#2ed573,#1db954)';
+      loadSolvers(); // refresh leaderboard
+    } else {
+      document.getElementById('resultWrongPoints').textContent = `${data.solver_delta} points`;
+      document.getElementById('resultWrong').classList.add('visible');
+      document.getElementById('resultCorrect').classList.remove('visible');
+      btn.innerHTML = prev; btn.disabled = false;
+    }
+  } catch { showToast('Connection error', 'error'); btn.innerHTML = prev; btn.disabled = false; }
+}
+
+// ══════════════════════════════════════════
+// UPVOTE
+// ══════════════════════════════════════════
+async function upvoteProblem() {
+  try {
+    const res  = await fetch(`/challenges/problems/${problemId}/upvote`, { method:'POST', credentials:'same-origin' });
+    const data = await res.json();
+    if (res.ok) showToast(data.action === 'added' ? 'Upvoted!' : 'Upvote removed', 'success');
+  } catch { showToast('Failed to upvote','error'); }
+}
+
+// ══════════════════════════════════════════
+// REPORT
+// ══════════════════════════════════════════
+function showReportModal() { document.getElementById('reportModal').classList.add('open'); }
+function hideReportModal() { document.getElementById('reportModal').classList.remove('open'); }
+async function submitReport(reason) {
+  hideReportModal();
+  try {
+    const res = await fetch(`/challenges/problems/${problemId}/report`, {
+      method:'POST', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ reason }),
+    });
+    const data = await res.json();
+    showToast(res.ok ? 'Report submitted' : (data.message||'Failed to report'), res.ok ? 'success' : 'error');
+  } catch { showToast('Connection error','error'); }
+}
+
+// ══════════════════════════════════════════
+// LOAD SOLVERS LEADERBOARD
+// ══════════════════════════════════════════
+async function loadSolvers() {
+  try {
+    const res  = await fetch(`/challenges/problems/${problemId}/attempts`, { credentials:'same-origin' });
+    const data = await res.json();
+    const list = document.getElementById('solversList');
+    if (!data.solvers?.length) { list.innerHTML = '<div class="lb-empty">No one has solved this yet — be the first!</div>'; return; }
+    const rankIcons = ['gold','silver','bronze'];
+    list.innerHTML = data.solvers.map((s, i) => `
+      <div class="solver-row">
+        <div class="solver-rank ${rankIcons[i]||''}">${i < 3 ? ['🥇','🥈','🥉'][i] : i+1}</div>
+        <div class="solver-avatar">${(s.solver_name||'?')[0].toUpperCase()}</div>
+        <div class="solver-name">${esc(s.solver_name)}</div>
+        <div class="solver-pts">+${s.points_awarded}pts</div>
+        <div class="solver-time">${relativeTime(s.createdAt)}</div>
+      </div>
+    `).join('');
+  } catch { document.getElementById('solversList').innerHTML = '<div class="lb-empty">Could not load solvers.</div>'; }
+}
+
+// ══════════════════════════════════════════
+// MATH KEYBOARD
+// ══════════════════════════════════════════
+let mkLatex = '';
+
+function mkIns(snippet) {
+  const input = document.getElementById('mk-input');
+  const start = input.selectionStart;
+  const before = mkLatex.slice(0, start);
+  const after  = mkLatex.slice(input.selectionEnd);
+  mkLatex = before + snippet + after;
+  input.value = mkLatex;
+  const pos = start + snippet.length;
+  input.setSelectionRange(pos, pos);
+  input.focus();
+  mkRender();
+}
+function mkBackspace() {
+  const input = document.getElementById('mk-input');
+  const start = input.selectionStart;
+  if (!start) return;
+  mkLatex = mkLatex.slice(0, start-1) + mkLatex.slice(start);
+  input.value = mkLatex;
+  input.setSelectionRange(start-1, start-1);
+  input.focus();
+  mkRender();
+}
+function mkClear() { mkLatex=''; document.getElementById('mk-input').value=''; mkRender(); }
+function mkOnInput(val) { mkLatex=val; mkRender(); }
+function mkRender() {
+  const p = document.getElementById('mk-preview');
+  if (!mkLatex.trim()) { p.innerHTML='<span class="mk-preview-placeholder">Your answer will appear here…</span>'; return; }
+  try { p.innerHTML = katex.renderToString(mkLatex, {displayMode:true,throwOnError:false}); }
+  catch { p.innerHTML = `<span style="color:var(--muted);font-size:0.8rem;">${mkLatex}</span>`; }
+}
+function mkTab(btn, panel) {
+  document.querySelectorAll('.mk-tab').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.mk-panel').forEach(p=>p.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('mk-panel-'+panel).classList.add('active');
+}
+
+// ══════════════════════════════════════════
+// HELPERS
+// ══════════════════════════════════════════
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+function relativeTime(iso){const d=Date.now()-new Date(iso).getTime();const m=Math.floor(d/60000);if(m<1)return'just now';if(m<60)return`${m}m ago`;const h=Math.floor(m/60);if(h<24)return`${h}h ago`;return`${Math.floor(h/24)}d ago`;}
+function showToast(msg,type){const c=document.getElementById('toastContainer');const t=document.createElement('div');t.className=`toast ${type||'default'}`;t.innerHTML=`<span>${type==='success'?'✓':'✕'}</span><span>${msg}</span>`;c.appendChild(t);setTimeout(()=>t.classList.add('show'),10);setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),400);},3200);}
+
+// ══════════════════════════════════════════
+// STARFIELD
+// ══════════════════════════════════════════
+const canvas=document.getElementById('starfield');const ctx=canvas.getContext('2d');let stars=[];
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+class Star{constructor(){this.reset()}reset(){this.x=Math.random()*canvas.width;this.y=Math.random()*canvas.height;this.size=Math.random()*1.6;this.opacity=Math.random();this.speed=Math.random()*0.012+0.003;this.dir=Math.random()>.5?1:-1;}draw(){this.opacity+=this.speed*this.dir;if(this.opacity>1||this.opacity<0)this.dir*=-1;ctx.beginPath();ctx.arc(this.x,this.y,this.size,0,Math.PI*2);ctx.fillStyle=`rgba(255,255,255,${Math.abs(this.opacity)})`;ctx.fill();}}
+function initStars(){stars=[];const n=Math.floor((canvas.width*canvas.height)/3200);for(let i=0;i<n;i++)stars.push(new Star());}
+function animateStars(){ctx.clearRect(0,0,canvas.width,canvas.height);stars.forEach(s=>s.draw());requestAnimationFrame(animateStars);}
+window.addEventListener('resize',()=>{resizeCanvas();initStars();});
+resizeCanvas();initStars();animateStars();
+
+// ══════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════
+loadProblem();
+</script>
+</body>
+</html>
