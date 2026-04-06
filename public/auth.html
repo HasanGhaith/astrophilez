@@ -616,7 +616,7 @@ async function handleLogin(e) {
     const data = await res.json();
     if (res.ok) {
       showToast('Welcome back!', 'success');
-      setTimeout(() => { window.location.href = '/explore'; }, 700);
+      setTimeout(() => { window.location.href = '/profile'; }, 700);
       return;
     }
     showError(data.message || 'Login failed');

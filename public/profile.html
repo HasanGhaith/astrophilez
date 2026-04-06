@@ -1,369 +1,605 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Profile</title>
-    <style>
-        :root {
-            --bg: #f4f4f5;
-            --card-bg: #ffffff;
-            --text: #18181b;
-            --text-muted: #71717a;
-            --border: #e4e4e7;
-            --accent: #2563eb;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile – Astrophiles</title>
+  <link rel="icon" href="/static/logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: var(--bg);
-            color: var(--text);
-            margin: 0;
-            padding: 20px;
-            line-height: 1.5;
-        }
+  <!-- ★ Shared shell styles -->
+  <link rel="stylesheet" href="/static/shell.css">
 
-        .container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+  <style>
+    /* ── Rank frame animations ── */
+    @keyframes frameGlow   { 0%,100%{filter:drop-shadow(0 0 5px var(--gc))} 50%{filter:drop-shadow(0 0 14px var(--gc)) drop-shadow(0 0 26px var(--gc))} }
+    @keyframes frameRotate { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+    @keyframes wingFloat   { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-3px)} }
+    @keyframes framePulse  { 0%,100%{opacity:1} 50%{opacity:0.7} }
+    .fr-pro   { --gc:rgba(212,160,80,0.7);  animation:frameGlow 3s   ease-in-out infinite; }
+    .fr-expert{ --gc:rgba(150,170,230,0.7); animation:frameGlow 2.5s ease-in-out infinite; }
+    .fr-legend{ --gc:rgba(243,209,59,0.85); animation:frameGlow 2s   ease-in-out infinite; }
+    .rank-frame-svg [style*="frameRotate"]{transform-box:fill-box;transform-origin:center;}
+    .rank-frame-svg [style*="wingFloat"]  {transform-box:fill-box;transform-origin:center;}
+    .rank-frame-svg [style*="framePulse"] {transform-box:fill-box;transform-origin:center;}
 
-        /* Header / Nav */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 30px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid var(--border);
-        }
+    /* ── Profile header ── */
+    .profile-header   {padding:1.75rem 1.75rem 1.25rem;}
+    .avatar-section   {display:flex;align-items:flex-start;gap:1.5rem;margin-bottom:1.25rem;}
+    .avatar-frame-wrap{position:relative;width:128px;height:128px;flex-shrink:0;}
+    .rank-frame-svg   {position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;overflow:visible;}
+    .avatar-circle    {position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:88px;height:88px;border-radius:50%;background:linear-gradient(135deg,#1a2540,#0c1220);border:2px solid var(--border);display:flex;align-items:center;justify-content:center;font-family:'Syne',sans-serif;font-weight:800;font-size:2.1rem;color:var(--accent);z-index:1;}
+    .rank-pill        {position:absolute;bottom:-4px;left:50%;transform:translateX(-50%);font-size:0.6rem;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;border-radius:20px;padding:2px 8px;white-space:nowrap;z-index:3;font-family:'Syne',sans-serif;}
+    .rk-starter{background:#2a2320;color:#8c7a6b;border:1px solid #4a3a30;}
+    .rk-novice {background:#1e2010;color:#8c9a5b;border:1px solid #3a4820;}
+    .rk-rookie {background:#1a1e28;color:#6b8cbb;border:1px solid #2a3a5a;}
+    .rk-pro    {background:#281e10;color:#d4a050;border:1px solid #5a3a10;}
+    .rk-expert {background:#202028;color:#c0c8e0;border:1px solid #4050a0;}
+    .rk-legend {background:#28200a;color:#f3d13b;border:1px solid #8a6010;box-shadow:0 0 8px rgba(243,209,59,0.25);}
+    .profile-meta   {flex:1;min-width:0;padding-top:8px;}
+    .profile-name   {font-family:'Syne',sans-serif;font-weight:700;font-size:1.5rem;letter-spacing:-0.02em;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+    .profile-handle {font-size:0.82rem;color:var(--muted);margin:3px 0 8px;}
+    .profile-bio    {font-size:0.9rem;line-height:1.6;opacity:0.85;margin-bottom:10px;}
+    .profile-bio.empty{color:var(--muted);font-style:italic;}
+    .join-date      {font-size:0.75rem;color:var(--muted);display:flex;align-items:center;gap:4px;}
+    .join-date svg  {width:12px;height:12px;}
 
-        .logo { font-weight: 700; font-size: 1.2rem; text-decoration: none; color: var(--text); }
-        .nav-links a { margin-left: 20px; text-decoration: none; color: var(--text-muted); font-size: 0.9rem; }
-        .nav-links a:hover { color: var(--accent); }
+    /* ── Stats row ── */
+    .stats-row{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--border);}
+    .stat-item{padding:1rem 0.4rem;text-align:center;}
+    .stat-item:not(:last-child){border-right:1px solid var(--border);}
+    .stat-value{font-family:'Syne',sans-serif;font-weight:700;font-size:1.15rem;display:block;}
+    .stat-value.accent{color:var(--accent);}
+    .stat-label{font-size:0.65rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:2px;display:block;}
 
-        /* Profile Stats Grid */
-        .profile-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 24px;
-            margin-bottom: 24px;
-        }
+    /* ── Rank cards ── */
+    .rank-cards      {display:grid;grid-template-columns:1fr 1fr;gap:0.75rem;padding:1rem 1.75rem;border-top:1px solid var(--border);}
+    .rank-card       {background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:14px;padding:0.9rem 1rem;display:flex;align-items:center;gap:0.75rem;transition:border-color 0.2s;}
+    .rank-card:hover {border-color:rgba(243,209,59,0.2);}
+    .rank-card-icon  {font-size:1.4rem;flex-shrink:0;line-height:1;}
+    .rank-card-value {font-family:'Syne',sans-serif;font-weight:800;font-size:1.2rem;color:var(--accent);display:block;line-height:1;}
+    .rank-card-label {font-size:0.67rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;margin-top:3px;display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 20px;
-            margin-bottom: 24px;
-        }
+    /* ── Performance section ── */
+    .perf-section {padding:1rem 1.75rem;border-top:1px solid var(--border);}
+    .perf-title   {font-family:'Syne',sans-serif;font-weight:700;font-size:0.75rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:0.85rem;display:flex;align-items:center;gap:6px;}
+    .perf-title::after{content:'';flex:1;height:1px;background:var(--border);}
+    .perf-grid    {display:grid;grid-template-columns:repeat(3,1fr);gap:0.6rem;margin-bottom:0.6rem;}
+    .perf-card    {background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:12px;padding:0.8rem 0.6rem;text-align:center;transition:border-color 0.2s;}
+    .perf-card:hover{border-color:rgba(122,133,153,0.35);}
+    .perf-val     {font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;display:block;margin-bottom:2px;}
+    .perf-label   {font-size:0.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+    .accuracy-row {background:rgba(5,8,15,0.5);border:1px solid var(--border);border-radius:12px;padding:0.75rem 1rem;display:flex;align-items:center;gap:1rem;}
+    .accuracy-pct {font-family:'Syne',sans-serif;font-weight:800;font-size:1.1rem;color:var(--success);}
+    .accuracy-sub {font-size:0.63rem;color:var(--muted);text-transform:uppercase;letter-spacing:0.05em;}
+    .accuracy-bar-wrap{flex:1;background:rgba(255,255,255,0.06);border-radius:6px;height:6px;overflow:hidden;}
+    .accuracy-bar {height:100%;border-radius:6px;background:linear-gradient(90deg,var(--success),#a8f5c7);transition:width 1s cubic-bezier(0.16,1,0.3,1);}
+    .accuracy-attempts{font-size:0.72rem;color:var(--muted);flex-shrink:0;white-space:nowrap;}
 
-        .avatar {
-            width: 80px;
-            height: 80px;
-            background: #ddd;
-            border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 2rem;
-            color: #666;
-            font-weight: bold;
-        }
+    /* ── Action row ── */
+    .action-row {padding:0.75rem 1.75rem;border-top:1px solid var(--border);display:flex;gap:8px;}
+    .btn-follow {flex:1;padding:0.65rem 1rem;border-radius:11px;font-size:0.88rem;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.22s;border:none;}
+    .btn-follow.follow    {background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;}
+    .btn-follow.follow:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--accent-glow);}
+    .btn-follow.following {background:transparent;border:1px solid var(--border);color:var(--muted);}
+    .btn-follow.following:hover{border-color:rgba(255,71,87,0.4);color:var(--error);}
+    .btn-edit   {flex:1;padding:0.65rem 1rem;border-radius:11px;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-size:0.88rem;font-weight:700;font-family:'Syne',sans-serif;cursor:pointer;transition:all 0.22s;border:none;}
+    .btn-edit:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--accent-glow);}
 
-        .user-details h1 { margin: 0 0 5px 0; font-size: 1.5rem; }
-        .user-details p { margin: 0; color: var(--text-muted); }
+    /* ── Posts grid ── */
+    .posts-section {margin-top:1.25rem;}
+    .posts-header  {display:flex;align-items:center;justify-content:space-between;padding:0 0.25rem;margin-bottom:0.75rem;}
+    .posts-header-title{font-family:'Syne',sans-serif;font-weight:700;font-size:0.9rem;}
+    .posts-count-badge {font-size:0.7rem;background:var(--accent-dim);border:1px solid rgba(243,209,59,0.2);color:var(--accent);border-radius:8px;padding:2px 8px;font-weight:600;}
+    .posts-grid    {display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:0.75rem;}
+    .post-card     {background:var(--card);border:1px solid var(--border);border-radius:14px;overflow:hidden;cursor:pointer;transition:all 0.18s;animation:fadeUp 0.3s cubic-bezier(0.16,1,0.3,1) both;}
+    .post-card:hover{border-color:rgba(243,209,59,0.25);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.35);}
+    @keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .post-math     {padding:0.75rem;min-height:72px;display:flex;align-items:center;justify-content:center;background:rgba(5,8,15,0.5);border-bottom:1px solid var(--border);overflow:hidden;font-size:0.85rem;}
+    .post-footer   {padding:0.55rem 0.75rem;display:flex;align-items:center;justify-content:space-between;}
+    .post-diff     {font-size:0.65rem;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;padding:1px 6px;border-radius:4px;}
+    .pd-1,.pd-2{background:rgba(46,213,115,0.1);color:#2ed573;border:1px solid rgba(46,213,115,0.2);}
+    .pd-3{background:rgba(243,209,59,0.1);color:var(--accent);border:1px solid rgba(243,209,59,0.2);}
+    .pd-4{background:rgba(255,165,2,0.1);color:#ffa502;border:1px solid rgba(255,165,2,0.2);}
+    .pd-5{background:rgba(255,71,87,0.1);color:var(--error);border:1px solid rgba(255,71,87,0.2);}
+    .post-stats    {display:flex;align-items:center;gap:6px;font-size:0.65rem;color:var(--muted);}
+    .post-stat     {display:flex;align-items:center;gap:2px;}
+    .post-stat svg {width:10px;height:10px;}
 
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 16px;
-            border-top: 1px solid var(--border);
-            padding-top: 20px;
-        }
+    /* ── Edit modal ── */
+    .modal-overlay{display:none;position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.65);backdrop-filter:blur(6px);align-items:center;justify-content:center;padding:1rem;}
+    .modal-overlay.open{display:flex;}
+    .modal        {background:#0c1220;border:1px solid var(--border);border-radius:20px;width:100%;max-width:460px;animation:modalIn 0.35s cubic-bezier(0.16,1,0.3,1) both;overflow:hidden;}
+    @keyframes modalIn{from{opacity:0;transform:scale(0.95) translateY(10px)}to{opacity:1;transform:scale(1) translateY(0)}}
+    .modal-header {padding:1.25rem 1.5rem;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+    .modal-title  {font-family:'Syne',sans-serif;font-weight:700;font-size:1.1rem;}
+    .modal-close  {width:32px;height:32px;border-radius:8px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.15s;}
+    .modal-close:hover{color:var(--fg);border-color:rgba(255,255,255,0.3);}
+    .modal-close svg{width:14px;height:14px;}
+    .modal-body   {padding:1.5rem;}
+    .form-group   {margin-bottom:1.25rem;}
+    .form-label   {display:block;font-size:0.78rem;font-weight:600;color:var(--muted);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:0.5rem;}
+    .form-input   {width:100%;padding:0.75rem 1rem;background:rgba(5,8,15,0.6);border:1px solid var(--border);border-radius:11px;color:var(--fg);font-size:0.9rem;font-family:'DM Sans',sans-serif;transition:all 0.22s;outline:none;}
+    .form-input:focus{border-color:rgba(243,209,59,0.5);box-shadow:0 0 0 3px rgba(243,209,59,0.08);}
+    .form-input::placeholder{color:rgba(122,133,153,0.5);}
+    textarea.form-input{resize:vertical;min-height:80px;}
+    .form-hint    {font-size:0.72rem;color:var(--muted);margin-top:0.35rem;}
+    .form-hint.error{color:var(--error);}
+    .country-select-wrap{position:relative;}
+    .country-select{width:100%;padding:0.75rem 1rem;background:rgba(5,8,15,0.6);border:1px solid var(--border);border-radius:11px;color:var(--fg);font-size:0.9rem;font-family:'DM Sans',sans-serif;transition:all 0.22s;outline:none;appearance:none;cursor:pointer;}
+    .country-select:focus{border-color:rgba(243,209,59,0.5);}
+    .country-select option{background:#0c1220;}
+    .country-arrow{position:absolute;right:1rem;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--muted);}
+    .country-arrow svg{width:14px;height:14px;}
+    .modal-footer {padding:0 1.5rem 1.5rem;display:flex;gap:0.75rem;}
+    .btn-cancel   {flex:1;padding:0.7rem;border-radius:11px;border:1px solid var(--border);background:transparent;color:var(--muted);font-size:0.88rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.2s;}
+    .btn-cancel:hover{color:var(--fg);border-color:rgba(255,255,255,0.3);}
+    .btn-save     {flex:1;padding:0.7rem;border-radius:11px;background:linear-gradient(135deg,var(--accent),#d4851a);color:#05080f;font-size:0.88rem;font-weight:700;font-family:'Syne',sans-serif;border:none;cursor:pointer;transition:all 0.22s;}
+    .btn-save:hover{transform:translateY(-1px);box-shadow:0 8px 20px var(--accent-glow);}
+    .btn-save:disabled{opacity:0.5;cursor:not-allowed;transform:none;box-shadow:none;}
 
-        .stat-item {
-            text-align: center;
-        }
-
-        .stat-label { font-size: 0.8rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
-        .stat-value { font-size: 1.5rem; font-weight: 700; color: var(--accent); margin-top: 4px; }
-
-        /* Tabs */
-        .tabs {
-            display: flex;
-            gap: 20px;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 20px;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            padding: 10px 0;
-            cursor: pointer;
-            font-size: 1rem;
-            color: var(--text-muted);
-            border-bottom: 2px solid transparent;
-        }
-
-        .tab-btn.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-            font-weight: 600;
-        }
-
-        /* Lists */
-        .problem-list {
-            list-style: none;
-            padding: 0;
-            margin: 0;
-        }
-
-        .problem-item {
-            background: var(--card-bg);
-            border: 1px solid var(--border);
-            padding: 16px;
-            margin-bottom: 12px;
-            border-radius: 6px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .problem-main { flex: 1; }
-        .problem-topic { 
-            display: inline-block; 
-            padding: 2px 8px; 
-            background: #e0f2fe; 
-            color: #0369a1; 
-            border-radius: 12px; 
-            font-size: 0.75rem; 
-            margin-bottom: 6px;
-        }
-        .problem-title { font-weight: 600; display: block; margin-bottom: 4px; text-decoration: none; color: inherit; }
-        .problem-title:hover { color: var(--accent); }
-        .problem-meta { font-size: 0.85rem; color: var(--text-muted); }
-
-        .badge {
-            padding: 4px 10px;
-            border-radius: 4px;
-            font-size: 0.8rem;
-            font-weight: 600;
-            text-align: right;
-            min-width: 80px;
-        }
-        .badge-difficulty { background: #f3f4f6; color: #374151; }
-        .badge-rating { background: #dcfce7; color: #166534; }
-
-        .hidden { display: none; }
-        .error-msg { color: #ef4444; text-align: center; margin-top: 40px; }
-        .loading { text-align: center; color: var(--text-muted); margin-top: 40px; }
-
-    </style>
+    /* ── Profile-specific responsive ── */
+    @media(max-width:680px){
+      .profile-header{padding:1.25rem 1.25rem 1rem;}
+      .rank-cards    {padding:0.85rem 1.25rem;}
+      .perf-section  {padding:1rem 1.25rem;}
+      .action-row    {padding:0.75rem 1.25rem;}
+    }
+    @media(max-width:500px){
+      .stats-row{grid-template-columns:repeat(2,1fr);}
+      .stats-row .stat-item:nth-child(2){border-right:none;}
+      .stats-row .stat-item:nth-child(3){border-top:1px solid var(--border);}
+      .perf-grid{grid-template-columns:repeat(2,1fr);}
+      .posts-grid{grid-template-columns:repeat(2,1fr);}
+      .avatar-section{flex-direction:column;align-items:center;text-align:center;}
+      .join-date{justify-content:center;}
+      .rank-cards{gap:0.5rem;padding:0.75rem 1rem;}
+    }
+  </style>
 </head>
 <body>
 
-<div class="container">
-    <header>
-        <a href="/explore.html" class="logo">MathChallenges</a>
-        <nav class="nav-links">
-            <a href="/explore.html">Explore</a>
-            <a href="/profile.html">Profile</a>
-            <a href="#" onclick="logout()">Logout</a>
-        </nav>
-    </header>
+<div class="app-shell">
+  <div class="center-wrapper">
+    <div class="main-content">
+      <!-- shell.js injects the mobile top-nav here -->
 
-    <!-- Stats Section -->
-    <section id="stats-section" class="hidden">
-        <div class="profile-card">
-            <div class="user-info">
-                <div class="avatar" id="user-avatar">?</div>
-                <div class="user-details">
-                    <h1 id="display-name">Loading...</h1>
-                    <p id="username">@loading</p>
+      <div style="margin-top:0.75rem;">
+
+        <div id="loadingState" class="glass" style="padding:2rem;text-align:center;">
+          <div class="sk" style="width:88px;height:88px;border-radius:50%;margin:0 auto 1rem;"></div>
+          <div class="sk" style="width:160px;height:20px;margin:0 auto 0.5rem;"></div>
+          <div class="sk" style="width:100px;height:14px;margin:0 auto 1.5rem;"></div>
+          <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:4px;">
+            <div class="sk" style="height:56px;border-radius:8px;"></div>
+            <div class="sk" style="height:56px;border-radius:8px;"></div>
+            <div class="sk" style="height:56px;border-radius:8px;"></div>
+            <div class="sk" style="height:56px;border-radius:8px;"></div>
+          </div>
+        </div>
+
+        <div id="errorState" style="display:none;text-align:center;padding:3rem 1rem;color:var(--muted);">
+          <div style="font-size:2.5rem;margin-bottom:0.75rem;">🔭</div>
+          <h3 style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:700;color:var(--fg);margin-bottom:0.4rem;">Profile not found</h3>
+          <p style="font-size:0.85rem;margin-bottom:1.5rem;">This user could not be loaded.</p>
+          <button onclick="history.back()" style="padding:0.55rem 1.1rem;border-radius:9px;background:var(--accent-dim);border:1px solid rgba(243,209,59,0.3);color:var(--accent);font-size:0.82rem;font-weight:600;cursor:pointer;">Go Back</button>
+        </div>
+
+        <div id="profileContent" style="display:none;">
+          <div class="glass">
+            <div class="profile-header">
+              <div class="avatar-section">
+                <div class="avatar-frame-wrap" id="avatarWrap">
+                  <div class="avatar-circle" id="avatarEl">?</div>
                 </div>
+                <div class="profile-meta">
+                  <div class="profile-name"   id="profileName">—</div>
+                  <div class="profile-handle" id="profileHandle">@—</div>
+                  <div class="profile-bio empty" id="profileBio">No bio yet.</div>
+                  <div class="join-date" id="joinDate">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+                    <span>—</span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="stats-grid">
-                <div class="stat-item">
-                    <div class="stat-label">Solver Rating</div>
-                    <div class="stat-value" id="solver-rating">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Solver Score</div>
-                    <div class="stat-value" id="solver-score">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Creator Score</div>
-                    <div class="stat-value" id="creator-score">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Total Solves</div>
-                    <div class="stat-value" id="total-solves">-</div>
-                </div>
-                <div class="stat-item">
-                    <div class="stat-label">Streak</div>
-                    <div class="stat-value" id="current-streak">-</div>
-                </div>
+
+            <div class="stats-row">
+              <div class="stat-item"><span class="stat-value accent" id="statElo">—</span><span class="stat-label">Elo Rating</span></div>
+              <div class="stat-item"><span class="stat-value" id="statPosts">—</span><span class="stat-label">Problems</span></div>
+              <div class="stat-item"><span class="stat-value" id="statFollowers">—</span><span class="stat-label">Followers</span></div>
+              <div class="stat-item"><span class="stat-value" id="statFollowing">—</span><span class="stat-label">Following</span></div>
             </div>
-        </div>
-    </section>
 
-    <!-- Content Tabs -->
-    <div id="content-area" class="hidden">
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('created')">Created Problems</button>
-            <button class="tab-btn" onclick="switchTab('solved')">Solved History</button>
+            <div class="rank-cards">
+              <div class="rank-card">
+                <div class="rank-card-icon">🌍</div>
+                <div>
+                  <span class="rank-card-value" id="rankWorld">—</span>
+                  <span class="rank-card-label">World rank</span>
+                </div>
+              </div>
+              <div class="rank-card" id="countryRankCard">
+                <div class="rank-card-icon" id="countryFlag">🏳</div>
+                <div>
+                  <span class="rank-card-value" id="rankCountry">—</span>
+                  <span class="rank-card-label" id="rankCountryLabel">Country rank</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="perf-section" id="perfSection" style="display:none;">
+              <div class="perf-title">Performance</div>
+              <div class="perf-grid">
+                <div class="perf-card"><span class="perf-val" style="color:var(--success)" id="perfSolverElo">—</span><span class="perf-label">Solver Elo</span></div>
+                <div class="perf-card"><span class="perf-val" style="color:var(--arena)"   id="perfCreatorScore">—</span><span class="perf-label">Creator Score</span></div>
+                <div class="perf-card"><span class="perf-val" style="color:var(--accent)"  id="perfStreak">—</span><span class="perf-label">Streak 🔥</span></div>
+              </div>
+              <div class="accuracy-row">
+                <div>
+                  <div class="accuracy-pct" id="perfAccuracy">—%</div>
+                  <div class="accuracy-sub">Accuracy</div>
+                </div>
+                <div class="accuracy-bar-wrap"><div class="accuracy-bar" id="accuracyBar" style="width:0%;"></div></div>
+                <div class="accuracy-attempts" id="perfAttempts">— attempts</div>
+              </div>
+            </div>
+
+            <div class="action-row" id="actionRow"></div>
+          </div>
+
+          <div class="posts-section">
+            <div class="posts-header">
+              <span class="posts-header-title">Problems Posted</span>
+              <span class="posts-count-badge" id="postsCountBadge">0</span>
+            </div>
+            <div class="posts-grid" id="postsGrid"></div>
+            <div id="postsEmpty" style="display:none;text-align:center;padding:2.5rem 1rem;color:var(--muted);">
+              <div style="font-size:2rem;margin-bottom:0.5rem;opacity:0.4;">📐</div>
+              <p style="font-size:0.85rem;">No problems posted yet.</p>
+            </div>
+          </div>
         </div>
 
-        <div id="tab-created">
-            <ul id="created-list" class="problem-list">
-                <!-- Populated by JS -->
-            </ul>
-        </div>
-
-        <div id="tab-solved" class="hidden">
-            <p style="text-align:center; color: #666; padding: 20px;">
-                Solved history requires a backend endpoint (e.g., GET /api/users/me/attempts).
-            </p>
-            <ul id="solved-list" class="problem-list">
-                <!-- Populated by JS if endpoint existed -->
-            </ul>
-        </div>
+      </div>
     </div>
-
-    <div id="loading" class="loading">Loading profile data...</div>
-    <div id="error" class="error-msg hidden"></div>
+  </div>
 </div>
 
+<!-- Edit profile modal -->
+<div class="modal-overlay" id="editModal">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Edit Profile</span>
+      <button class="modal-close" onclick="closeEditModal()">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      </button>
+    </div>
+    <div class="modal-body">
+      <div class="form-group">
+        <label class="form-label">Display Name</label>
+        <input type="text" class="form-input" id="editName" placeholder="Your display name" maxlength="40">
+        <div class="form-hint" id="editNameHint"></div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Bio</label>
+        <textarea class="form-input" id="editBio" placeholder="Tell others about yourself…" rows="3" maxlength="200"></textarea>
+        <div class="form-hint"><span id="bioCharCount">0</span>/200 characters</div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Country</label>
+        <div class="country-select-wrap">
+          <select class="country-select" id="editCountry"><option value="">Select country…</option></select>
+          <div class="country-arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeEditModal()">Cancel</button>
+      <button class="btn-save" id="saveBtn" onclick="saveProfile()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ★ Shared shell — must load before page script -->
+<script src="/static/shell.js"></script>
+
 <script>
-    // ── Configuration ────────────────────────────────────────────────────────
-    // Note: The backend router provided (challenges.js) handles /challenges/problems/mine.
-    // We assume a /api/auth/me or /api/users/me exists to get full user stats. 
-    // If not, you will need to add that route to your server.
-    const API_ME = '/api/auth/me'; 
-    const API_MY_PROBLEMS = '/challenges/problems/mine';
+/* ── Rank frame SVG builders ──────────────────────────────── */
+const FRAMES = {
+  starter:()=>`<polygon points="64,14 90,22 108,44 108,84 90,106 38,106 20,84 20,44 38,22" fill="none" stroke="url(#gStarter)" stroke-width="3.5" stroke-linejoin="round" stroke-dasharray="6 3" opacity="0.9"/><polygon points="64,18 88,25 104,46 104,82 88,103 40,103 24,82 24,46 40,25" fill="none" stroke="url(#gStarter)" stroke-width="1" opacity="0.4"/>`,
+  novice: ()=>`<rect x="20" y="20" width="88" height="88" rx="6" fill="none" stroke="url(#gNovice)" stroke-width="3" opacity="0.9"/><rect x="24" y="24" width="80" height="80" rx="4" fill="none" stroke="url(#gNovice)" stroke-width="1" opacity="0.35"/><polygon points="20,20 28,14 36,20 28,26" fill="url(#gNovice)" opacity="0.9"/><polygon points="108,20 100,14 92,20 100,26" fill="url(#gNovice)" opacity="0.9"/><polygon points="20,108 28,114 36,108 28,102" fill="url(#gNovice)" opacity="0.9"/><polygon points="108,108 100,114 92,108 100,102" fill="url(#gNovice)" opacity="0.9"/>`,
+  rookie: ()=>`<polygon points="64,12 100,32 100,96 64,116 28,96 28,32" fill="none" stroke="url(#gRookie)" stroke-width="4" stroke-linejoin="round"/><polygon points="64,18 96,36 96,92 64,110 32,92 32,36" fill="none" stroke="url(#gRookie)" stroke-width="1.5" opacity="0.4"/><rect x="58" y="10" width="12" height="5" rx="1" fill="url(#gRookie)" opacity="0.8"/><rect x="58" y="113" width="12" height="5" rx="1" fill="url(#gRookie)" opacity="0.8"/>`,
+  pro:    ()=>`<circle cx="64" cy="64" r="52" fill="none" stroke="url(#gPro)" stroke-width="4.5"/><circle cx="64" cy="64" r="56" fill="none" stroke="url(#gPro)" stroke-width="1.2" opacity="0.3"/><path d="M44,16 Q64,4 84,16" fill="none" stroke="url(#gPro)" stroke-width="3" stroke-linecap="round"/><circle cx="44" cy="16" r="3" fill="url(#gPro)"/><circle cx="84" cy="16" r="3" fill="url(#gPro)"/><circle cx="64" cy="8" r="4" fill="url(#gPro)"/><path d="M44,112 Q64,124 84,112" fill="none" stroke="url(#gPro)" stroke-width="3" stroke-linecap="round"/><circle cx="44" cy="112" r="3" fill="url(#gPro)"/><circle cx="84" cy="112" r="3" fill="url(#gPro)"/><circle cx="64" cy="120" r="4" fill="url(#gPro)"/><circle cx="64" cy="64" r="52" fill="none" stroke="white" stroke-width="1.5" stroke-dasharray="40 287" opacity="0.35" style="animation:frameRotate 4s linear infinite;transform-box:fill-box;transform-origin:center;"/>`,
+  expert: ()=>`<circle cx="64" cy="64" r="50" fill="none" stroke="url(#gExpert)" stroke-width="5"/><circle cx="64" cy="64" r="55" fill="none" stroke="url(#gExpert)" stroke-width="1" opacity="0.3"/><path d="M14,64 C4,50 0,36 10,28 C18,22 26,30 22,42 C26,32 32,28 38,34 C42,40 34,50 28,56 L14,64Z" fill="url(#gExpert)" opacity="0.75" style="animation:wingFloat 3s ease-in-out infinite;transform-box:fill-box;transform-origin:center;"/><path d="M114,64 C124,50 128,36 118,28 C110,22 102,30 106,42 C102,32 96,28 90,34 C86,40 94,50 100,56 L114,64Z" fill="url(#gExpert)" opacity="0.75" style="animation:wingFloat 3s ease-in-out infinite 0.4s;transform-box:fill-box;transform-origin:center;"/><circle cx="64" cy="64" r="50" fill="none" stroke="white" stroke-width="2" stroke-dasharray="30 285" opacity="0.4" style="animation:frameRotate 3s linear infinite;transform-box:fill-box;transform-origin:center;"/><polygon points="64,6 66,12 72,12 68,16 70,22 64,18 58,22 60,16 56,12 62,12" fill="url(#gExpert)" filter="url(#fGlow)"/>`,
+  legend: ()=>`<circle cx="64" cy="64" r="58" fill="none" stroke="url(#gLegend)" stroke-width="2" opacity="0.35" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite;transform-box:fill-box;transform-origin:center;"/><circle cx="64" cy="64" r="52" fill="none" stroke="url(#gLegend)" stroke-width="5.5" filter="url(#fGlow)"/><circle cx="64" cy="64" r="47" fill="none" stroke="url(#gLegend)" stroke-width="1" opacity="0.4"/><path d="M12,64 C-4,44 -6,20 8,12 C18,6 30,16 24,32 C30,18 40,14 48,22 C54,30 44,44 36,54 L12,64Z" fill="url(#gLegend)" opacity="0.8" filter="url(#fGlow)" style="animation:wingFloat 2.5s ease-in-out infinite;transform-box:fill-box;transform-origin:center;"/><path d="M116,64 C132,44 134,20 120,12 C110,6 98,16 104,32 C98,18 88,14 80,22 C74,30 84,44 92,54 L116,64Z" fill="url(#gLegend)" opacity="0.8" filter="url(#fGlow)" style="animation:wingFloat 2.5s ease-in-out infinite 0.5s;transform-box:fill-box;transform-origin:center;"/><path d="M50,18 Q64,2 78,18" fill="none" stroke="url(#gLegend)" stroke-width="3" stroke-linecap="round" filter="url(#fGlow)"/><polygon points="64,1 67,10 76,10 69,15 72,24 64,19 56,24 59,15 52,10 61,10" fill="url(#gLegend)" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite;transform-box:fill-box;transform-origin:center;"/><path d="M50,110 Q64,126 78,110" fill="none" stroke="url(#gLegend)" stroke-width="3" stroke-linecap="round" filter="url(#fGlow)"/><polygon points="64,127 67,118 76,118 69,113 72,104 64,109 56,104 59,113 52,118 61,118" fill="url(#gLegend)" filter="url(#fGlowS)" style="animation:framePulse 2s ease-in-out infinite 1s;transform-box:fill-box;transform-origin:center;"/><circle cx="64" cy="64" r="52" fill="none" stroke="white" stroke-width="2" stroke-dasharray="20 306" opacity="0.5" style="animation:frameRotate 2.5s linear infinite;transform-box:fill-box;transform-origin:center;"/><circle cx="64" cy="64" r="52" fill="none" stroke="url(#gLegend)" stroke-width="1.5" stroke-dasharray="60 265" opacity="0.6" style="animation:frameRotate 5s linear infinite reverse;transform-box:fill-box;transform-origin:center;"/>`,
+};
 
-    // ── State ────────────────────────────────────────────────────────────────
-    let currentUser = null;
+function applyRankFrame(rankKey) {
+  const wrap = document.getElementById('avatarWrap');
+  wrap.querySelectorAll('.rank-frame-svg,.rank-pill').forEach(el => el.remove());
+  const builder = FRAMES[rankKey];
+  if (!builder) return;
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('viewBox','0 0 128 128');
+  svg.setAttribute('overflow','visible');
+  svg.className = `rank-frame-svg fr-${rankKey}`;
+  svg.setAttribute('aria-hidden','true');
+  svg.innerHTML = builder();
+  wrap.appendChild(svg);
+}
 
-    // ── Init ──────────────────────────────────────────────────────────────────
-    document.addEventListener('DOMContentLoaded', async () => {
-        // Check simple auth presence
-        if (!document.cookie.includes('accessToken')) {
-            window.location.href = '/login.html';
-            return;
-        }
-
-        await fetchProfileData();
-        await fetchMyProblems();
+function populateCountries() {
+  const sel = document.getElementById('editCountry');
+  Object.keys(Shell.COUNTRY_NAMES)
+    .sort((a,b) => Shell.COUNTRY_NAMES[a].localeCompare(Shell.COUNTRY_NAMES[b]))
+    .forEach(code => {
+      const opt = document.createElement('option');
+      opt.value = code;
+      opt.textContent = `${Shell.CMAP[code]||''} ${Shell.COUNTRY_NAMES[code]}`;
+      sel.appendChild(opt);
     });
+}
 
-    // ── API Calls ────────────────────────────────────────────────────────────
-    async function fetchProfileData() {
-        try {
-            const res = await fetch(API_ME);
-            if (!res.ok) throw new Error('Failed to fetch user');
-            
-            const data = await res.json();
-            if (data.success && data.user) {
-                currentUser = data.user;
-                renderStats(currentUser);
-                document.getElementById('loading').classList.add('hidden');
-                document.getElementById('stats-section').classList.remove('hidden');
-                document.getElementById('content-area').classList.remove('hidden');
-            } else {
-                throw new Error('Invalid user data');
-            }
-        } catch (err) {
-            console.error(err);
-            // Fallback: If /api/auth/me doesn't exist yet, show a generic view
-            // but still try to load created problems which we know exists.
-            document.getElementById('loading').classList.add('hidden');
-            document.getElementById('stats-section').classList.remove('hidden');
-            document.getElementById('content-area').classList.remove('hidden');
-            
-            // Render generic stats if API missing
-            document.getElementById('display-name').textContent = "User";
-            document.getElementById('error').textContent = "Could not load detailed stats (Endpoint /api/auth/me missing or auth failed).";
-            document.getElementById('error').classList.remove('hidden');
+/* ── State ── */
+let targetUser = null, isFollowing = false;
+
+/* ── Rank loading ── */
+async function loadRanks(user) {
+  const myElo = Shell.userElo(user);
+  let worldRank = '—', countryRank = '—';
+  try {
+    const r = await fetch('/api/leaderboard?limit=1000', { credentials:'same-origin' });
+    if (r.ok) {
+      const d = await r.json();
+      const list = d.users || d.data || (Array.isArray(d) ? d : []);
+      if (list.length) {
+        worldRank = `#${list.filter(u => Shell.userElo(u) > myElo).length + 1}`;
+        if (user.country) {
+          const cl = list.filter(u => u.country === user.country || u.country_code === user.country);
+          countryRank = `#${cl.filter(u => Shell.userElo(u) > myElo).length + 1}`;
         }
+      }
     }
+  } catch(e) { console.error('[Profile] loadRanks:', e); }
+  document.getElementById('rankWorld').textContent   = worldRank;
+  document.getElementById('rankCountry').textContent = countryRank;
+  if (user.country) {
+    document.getElementById('countryFlag').textContent       = Shell.CMAP[user.country] || '🏳';
+    document.getElementById('rankCountryLabel').textContent  = `Rank in ${Shell.COUNTRY_NAMES[user.country]||user.country}`;
+  } else {
+    document.getElementById('countryRankCard').style.opacity = '0.4';
+    document.getElementById('rankCountryLabel').textContent  = 'No country set';
+  }
+}
 
-    async function fetchMyProblems() {
-        const listEl = document.getElementById('created-list');
-        listEl.innerHTML = '<li class="loading">Loading problems...</li>';
+/* ── Render ── */
+function renderProfile(u, problems) {
+  const elo  = Shell.userElo(u);
+  const rank = Shell.getRank(elo);
+  const isMe = Shell.me && u._id?.toString() === Shell.me._id?.toString();
 
-        try {
-            const res = await fetch(API_MY_PROBLEMS);
-            const data = await res.json();
+  document.getElementById('avatarEl').textContent = (u.displayName||u.username||'?')[0].toUpperCase();
+  applyRankFrame(rank.key);
+  const pill = document.createElement('div');
+  pill.className = `rank-pill rk-${rank.key}`;
+  pill.textContent = rank.label;
+  document.getElementById('avatarWrap').appendChild(pill);
 
-            listEl.innerHTML = ''; // Clear loading
+  document.getElementById('profileName').innerHTML    = `${Shell.esc(u.displayName||u.username)} <span style="font-size:1.1rem;">${Shell.CMAP[u.country]||''}</span>`;
+  document.getElementById('profileHandle').textContent = '@'+(u.username||'');
+  const bioEl = document.getElementById('profileBio');
+  if (u.bio?.trim()) { bioEl.textContent = u.bio.trim(); bioEl.classList.remove('empty'); }
+  else               { bioEl.textContent = 'No bio yet.'; bioEl.classList.add('empty'); }
+  if (u.createdAt)
+    document.querySelector('#joinDate span').textContent = 'Joined ' +
+      new Date(u.createdAt).toLocaleDateString('en-US',{month:'long',year:'numeric'});
 
-            if (data.success && data.problems.length > 0) {
-                data.problems.forEach(pb => {
-                    const li = document.createElement('li');
-                    li.className = 'problem-item';
-                    li.innerHTML = `
-                        <div class="problem-main">
-                            <span class="problem-topic">${pb.topic || 'general'}</span>
-                            <a href="/problem.html?id=${pb._id}" class="problem-title">${pb.problem_text.latex}</a>
-                            <div class="problem-meta">
-                                ${pb.total_attempts} attempts • ${pb.success_rate ? (pb.success_rate * 100).toFixed(1) : 0}% success rate
-                            </div>
-                        </div>
-                        <div style="text-align:right">
-                            <div class="badge badge-rating">Elo: ${Math.round(pb.rating)}</div>
-                            <div class="badge badge-difficulty" style="margin-top:5px">Diff: ${pb.difficulty}</div>
-                        </div>
-                    `;
-                    listEl.appendChild(li);
-                });
-            } else {
-                listEl.innerHTML = '<li style="text-align:center; padding:20px; color:#888;">You haven\'t created any problems yet.</li>';
-            }
-        } catch (err) {
-            console.error(err);
-            listEl.innerHTML = '<li style="text-align:center; color:red;">Failed to load problems.</li>';
-        }
+  document.getElementById('statElo').textContent       = elo;
+  document.getElementById('statPosts').textContent     = problems.length;
+  document.getElementById('statFollowers').textContent = Array.isArray(u.followers) ? u.followers.length : (+(u.followers)||0);
+  document.getElementById('statFollowing').textContent = Array.isArray(u.following) ? u.following.length : (+(u.following)||0);
+
+  // Log raw user so we can see exact field names in the console
+  console.log('[Profile] user doc:', JSON.parse(JSON.stringify(u)));
+  const solverElo    = +(u.solver_rating ?? u.solver_score  ?? u.solver_points ?? 0);
+  const creatorScore = +(u.creator_score  ?? u.creator_points ?? 0);
+  const streak       = +(u.current_streak ?? u.streak ?? 0);
+  const correct      = +(u.total_solves   ?? u.correct_answers ?? u.correct_attempts ?? u.solves ?? 0);
+  const attempts     = +(u.total_attempts ?? u.attempts ?? u.submissions ?? 0);
+  const acc          = attempts > 0 ? Math.round(correct / attempts * 100) : 0;
+
+  document.getElementById('perfSolverElo').textContent    = Math.round(solverElo);
+  document.getElementById('perfCreatorScore').textContent = Math.round(creatorScore);
+  document.getElementById('perfStreak').textContent       = streak;
+  document.getElementById('perfAccuracy').textContent     = acc + '%';
+  document.getElementById('accuracyBar').style.width      = acc + '%';
+  document.getElementById('perfAttempts').textContent     = `${attempts} attempt${attempts!==1?'s':''}`;
+  document.getElementById('perfSection').style.display    = 'block';
+
+  const ar = document.getElementById('actionRow');
+  if (isMe) {
+    ar.innerHTML = `<button class="btn-edit" onclick="openEditModal()">✎ Edit Profile</button>`;
+  } else {
+    ar.innerHTML = `<button class="btn-follow ${isFollowing?'following':'follow'}" id="followBtn" onclick="toggleFollow('${Shell.esc(u._id)}')">${isFollowing?'✓ Following':'+ Follow'}</button>`;
+  }
+
+  renderPosts(problems);
+  document.getElementById('loadingState').style.display   = 'none';
+  document.getElementById('profileContent').style.display = 'block';
+  document.title = isMe ? 'Profile – Astrophiles' : `${u.displayName||u.username} – Astrophiles`;
+  loadRanks(u);
+}
+
+function renderPosts(problems) {
+  const grid  = document.getElementById('postsGrid');
+  const empty = document.getElementById('postsEmpty');
+  document.getElementById('postsCountBadge').textContent = problems.length;
+  if (!problems.length) { grid.style.display='none'; empty.style.display='block'; return; }
+  grid.innerHTML = '';
+  problems.slice(0,24).forEach((p,i) => {
+    if (i===0) console.log('[Profile] problem doc:', JSON.parse(JSON.stringify(p)));
+    const card = document.createElement('div');
+    card.className = 'post-card';
+    card.style.animationDelay = `${i*0.04}s`;
+    card.onclick = () => { window.location.href = `/problem?id=${p._id}`; };
+    const latex  = p.problem_text?.latex || p.problem_text || p.latex || '';
+    const diff   = p.difficulty || 1;
+    const views  = +(p.view_count ?? p.views ?? p.total_views ?? p.viewCount ?? 0);
+    const solves = +(p.correct_attempts ?? p.correct ?? p.solves ?? 0);
+    card.innerHTML = `
+      <div class="post-math" id="pm-${p._id}"></div>
+      <div class="post-footer">
+        <span class="post-diff pd-${diff}">${['','Easy','Fair','Med','Hard','Pro'][diff]||diff}</span>
+        <div class="post-stats">
+          <span class="post-stat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>${views}</span>
+          <span class="post-stat" style="color:var(--success);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>${solves}</span>
+        </div>
+      </div>`;
+    grid.appendChild(card);
+    const mathEl = card.querySelector(`#pm-${p._id}`);
+    if (latex) {
+      try { mathEl.innerHTML = katex.renderToString(latex,{displayMode:true,throwOnError:false,maxSize:4}); }
+      catch { mathEl.textContent = latex; }
+    } else {
+      mathEl.style.color = 'var(--muted)'; mathEl.style.fontSize = '0.75rem'; mathEl.textContent = 'No preview';
     }
+  });
+}
 
-    // ── UI Rendering ──────────────────────────────────────────────────────────
-    function renderStats(user) {
-        // Identity
-        document.getElementById('display-name').textContent = user.displayName || user.username || 'User';
-        document.getElementById('username').textContent = '@' + (user.username || 'unknown');
-        
-        // Avatar Initials
-        const initials = (user.displayName || user.username || 'U').substring(0, 2).toUpperCase();
-        document.getElementById('user-avatar').textContent = initials;
+/* ── Edit modal ── */
+function openEditModal() {
+  const me = Shell.me; if (!me) return;
+  document.getElementById('editName').value    = me.displayName || '';
+  document.getElementById('editBio').value     = me.bio || '';
+  document.getElementById('editCountry').value = me.country || '';
+  document.getElementById('bioCharCount').textContent = (me.bio||'').length;
+  document.getElementById('editNameHint').textContent = '';
+  document.getElementById('editModal').classList.add('open');
+  document.getElementById('editName').focus();
+}
+function closeEditModal() { document.getElementById('editModal').classList.remove('open'); }
 
-        // Numbers
-        document.getElementById('solver-rating').textContent = Math.round(user.solver_rating || 800);
-        document.getElementById('solver-score').textContent = Math.round(user.solver_score || 0);
-        document.getElementById('creator_score').textContent = Math.round(user.creator_score || 0); // Note: Schema in challenges.js implies creator_score
-        document.getElementById('total-solves').textContent = user.total_solves || 0;
-        document.getElementById('current-streak').textContent = user.current_streak || 0;
+document.getElementById('editBio').addEventListener('input', function(){
+  document.getElementById('bioCharCount').textContent = this.value.length;
+});
+
+async function saveProfile() {
+  const name    = document.getElementById('editName').value.trim();
+  const bio     = document.getElementById('editBio').value.trim();
+  const country = document.getElementById('editCountry').value;
+  const btn     = document.getElementById('saveBtn');
+  const hint    = document.getElementById('editNameHint');
+  if (!name || name.length < 2) {
+    hint.textContent = !name ? 'Display name is required' : 'Name must be at least 2 characters';
+    hint.className   = 'form-hint error';
+    document.getElementById('editName').focus(); return;
+  }
+  btn.disabled = true;
+  btn.innerHTML = '<span style="display:inline-block;animation:spin 0.7s linear infinite">⟳</span> Saving…';
+  try {
+    const r = await fetch('/api/profile/me',{
+      method:'PATCH', credentials:'same-origin',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({displayName:name, bio, country}),
+    });
+    const d = await r.json();
+    if (r.ok && d.success) {
+      document.getElementById('profileName').innerHTML   = `${Shell.esc(name)} <span style="font-size:1.1rem;">${Shell.CMAP[country]||''}</span>`;
+      const bioEl = document.getElementById('profileBio');
+      if (bio) { bioEl.textContent = bio; bioEl.classList.remove('empty'); }
+      else     { bioEl.textContent = 'No bio yet.'; bioEl.classList.add('empty'); }
+      document.getElementById('avatarEl').textContent           = name[0].toUpperCase();
+      document.getElementById('shell-nav-avatar').textContent   = name[0].toUpperCase();
+      document.getElementById('shell-nav-name').textContent     = name;
+      if (country) {
+        document.getElementById('countryFlag').textContent      = Shell.CMAP[country] || '🏳';
+        document.getElementById('rankCountryLabel').textContent = `Rank in ${Shell.COUNTRY_NAMES[country]||country}`;
+      }
+      closeEditModal();
+      Shell.showToast('Profile updated!', 'success');
+    } else {
+      hint.textContent = d.message || 'Failed to update'; hint.className = 'form-hint error';
     }
+  } catch {
+    hint.textContent = 'Connection error'; hint.className = 'form-hint error';
+  } finally {
+    btn.disabled = false; btn.textContent = 'Save Changes';
+  }
+}
 
-    function switchTab(tabName) {
-        // Toggle buttons
-        document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-        event.target.classList.add('active');
+/* ── Follow ── */
+async function toggleFollow(userId) {
+  const btn = document.getElementById('followBtn');
+  if (!btn || !Shell.me) { Shell.showToast('Sign in to follow','error'); return; }
+  btn.disabled = true;
+  try {
+    const r = await fetch(`/api/users/${userId}/follow`,{method:'POST',credentials:'same-origin'});
+    const d = await r.json();
+    if (r.ok) {
+      isFollowing     = d.action === 'followed';
+      btn.className   = `btn-follow ${isFollowing?'following':'follow'}`;
+      btn.textContent = isFollowing ? '✓ Following' : '+ Follow';
+      const fc = document.getElementById('statFollowers');
+      fc.textContent  = (parseInt(fc.textContent)||0) + (isFollowing?1:-1);
+      Shell.showToast(isFollowing?'Following!':'Unfollowed','success');
+    } else Shell.showToast(d.message||'Failed','error');
+  } catch { Shell.showToast('Connection error','error'); }
+  finally  { if(btn) btn.disabled = false; }
+}
 
-        // Toggle content
-        document.getElementById('tab-created').classList.add('hidden');
-        document.getElementById('tab-solved').classList.add('hidden');
-        
-        document.getElementById(`tab-${tabName}`).classList.remove('hidden');
+/* ── Data ── */
+async function resolveUser() {
+  const p = new URLSearchParams(location.search);
+  const id = p.get('id'), name = p.get('name');
+  if (!id && !name) return Shell.me || null;
+  for (const url of [id && `/api/users/${id}`, name && `/api/users/username/${encodeURIComponent(name.toLowerCase())}`].filter(Boolean)) {
+    try {
+      const r = await fetch(url,{credentials:'same-origin'});
+      if (!r.ok) continue;
+      const d = await r.json();
+      const user = d.user || (Array.isArray(d.users) && d.users[0]);
+      if (user) { isFollowing = d.isFollowing||false; return user; }
+    } catch {}
+  }
+  return null;
+}
+
+async function loadUserProblems(userId) {
+  for (const url of [`/api/users/${userId}/problems`, `/api/problems?creator=${userId}`]) {
+    try {
+      const r = await fetch(url,{credentials:'same-origin'});
+      if (!r.ok) continue;
+      const d = await r.json();
+      const p = d.problems || d.data || d;
+      if (Array.isArray(p)) return p;
+    } catch {}
+  }
+  return [];
+}
+
+/* ── Boot ── */
+document.addEventListener('DOMContentLoaded', () => {
+  // ★ One line to get the full shell
+  Shell.init({ active: 'profile' });
+
+  populateCountries();
+
+  Shell.onMeReady(async () => {
+    const user = await resolveUser();
+    if (!user) {
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('errorState').style.display   = 'block';
+      return;
     }
+    targetUser = user;
+    renderProfile(user, await loadUserProblems(user._id));
+  });
 
-    function logout() {
-        // Simple logout by clearing cookie and reloading
-        document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
-        window.location.href = '/login.html';
-    }
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeEditModal(); });
+});
 </script>
-
 </body>
 </html>
