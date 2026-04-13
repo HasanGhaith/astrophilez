@@ -271,7 +271,7 @@ body {
 .sk-friend { display: flex; align-items: center; gap: 9px; padding: 0.55rem 0.6rem; margin-bottom: 2px; }
 
 /* Leaderboard mini-section inside sidebar */
-.lb-sidebar-section  { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.lb-sidebar-section  { display:none 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
 .lb-sidebar-title    { font-family: 'Syne', sans-serif; font-weight: 700; font-size: 0.78rem; color: var(--fg); margin-bottom: 0.5rem; }
 .lb-sidebar-row      { display: flex; align-items: center; gap: 8px; padding: 0.4rem 0.5rem; border-radius: 8px; cursor: pointer; transition: background 0.15s; }
 .lb-sidebar-row:hover{ background: rgba(255,255,255,0.04); }

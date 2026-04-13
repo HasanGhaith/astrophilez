@@ -39,9 +39,11 @@ const VALID_COUNTRY_CODES = new Set([
 function issueAccessToken(user) {
   return jwt.sign(
     {
-      userId:  user._id.toString(),
-      name:    user.displayName ?? null,
-      country: user.country     ?? null,
+      userId:      user._id.toString(),
+      // FIX: was 'name' — renamed to 'displayName' to match the field name
+      // used everywhere else in the app (challenges.js, profile APIs, shell.js).
+      displayName: user.displayName ?? null,
+      country:     user.country     ?? null,
     },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: '15m' }
@@ -124,7 +126,10 @@ function createAuthRouter(usersCollection) {
       return res.status(400).json({ success: false, message: 'Username must be 2–20 characters (letters, numbers, underscores only)' });
     if (!password || password.length < 6)
       return res.status(400).json({ success: false, message: 'Password must be at least 6 characters' });
-    if (!country || !VALID_COUNTRY_CODES.has(country.toUpperCase()))
+
+    // FIX: normalise to uppercase before validation so 'lb' and 'LB' both work
+    const normCountry = country?.toUpperCase();
+    if (!normCountry || !VALID_COUNTRY_CODES.has(normCountry))
       return res.status(400).json({ success: false, message: 'Please select a valid country' });
 
     try {
@@ -132,24 +137,52 @@ function createAuthRouter(usersCollection) {
       if (existing) return res.status(409).json({ success: false, message: 'Username already taken' });
 
       const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+
       const inserted = await usersCollection.insertOne({
         username:      username.toLowerCase(),
-        displayName:   username,
+        displayName:   username,          // preserves original casing for display
         passwordHash,
-        country:       country.toUpperCase(),
-        solver_points: 0,
+        country:       normCountry,       // always uppercase in DB e.g. 'LB'
+        bio:           '',
+
+        // ── Elo / scoring (new schema) ──────────────────────────
+        solver_rating:  800,              // starting Elo (BASE_RATING from scoring.js)
+        solver_score:   0,                // cumulative display score
+        creator_score:  0,
+
+        // ── Legacy points fields (kept for backwards compat) ────
+        solver_points:  0,
         creator_points: 0,
-        createdAt:     new Date(),
-        refreshTokens: [],
+
+        // ── Activity counters ────────────────────────────────────
+        total_solves:   0,                // correct answers submitted as solver
+        total_attempts: 0,                // total answer submissions (right + wrong)
+        current_streak: 0,                // consecutive correct solves
+
+        // ── Social ──────────────────────────────────────────────
+        followers:      [],               // array of user ObjectIds
+        following:      [],               // array of user ObjectIds
+
+        createdAt:      new Date(),
+        updatedAt:      new Date(),
+        refreshTokens:  [],
       });
 
-      const user          = await usersCollection.findOne({ _id: inserted.insertedId });
-      const accessToken   = issueAccessToken(user);
-      const refreshToken  = issueRefreshToken();
+      const user         = await usersCollection.findOne({ _id: inserted.insertedId });
+      const accessToken  = issueAccessToken(user);
+      const refreshToken = issueRefreshToken();
 
       await usersCollection.updateOne(
         { _id: user._id },
-        { $push: { refreshTokens: { hash: hashToken(refreshToken), expiresAt: new Date(Date.now() + REFRESH_MAX_AGE), createdAt: new Date() } } }
+        {
+          $push: {
+            refreshTokens: {
+              hash:      hashToken(refreshToken),
+              expiresAt: new Date(Date.now() + REFRESH_MAX_AGE),
+              createdAt: new Date(),
+            },
+          },
+        }
       );
 
       setAuthCookies(res, accessToken, refreshToken);
@@ -181,7 +214,15 @@ function createAuthRouter(usersCollection) {
 
       await usersCollection.updateOne(
         { _id: user._id },
-        { $push: { refreshTokens: { hash: hashToken(refreshToken), expiresAt: new Date(Date.now() + REFRESH_MAX_AGE), createdAt: new Date() } } }
+        {
+          $push: {
+            refreshTokens: {
+              hash:      hashToken(refreshToken),
+              expiresAt: new Date(Date.now() + REFRESH_MAX_AGE),
+              createdAt: new Date(),
+            },
+          },
+        }
       );
 
       setAuthCookies(res, accessToken, refreshToken);
@@ -214,7 +255,13 @@ function createAuthRouter(usersCollection) {
       { _id: user._id },
       {
         $pull: { refreshTokens: { hash } },
-        $push: { refreshTokens: { hash: hashToken(newRefreshToken), expiresAt: new Date(Date.now() + REFRESH_MAX_AGE), createdAt: new Date() } },
+        $push: {
+          refreshTokens: {
+            hash:      hashToken(newRefreshToken),
+            expiresAt: new Date(Date.now() + REFRESH_MAX_AGE),
+            createdAt: new Date(),
+          },
+        },
       }
     );
 

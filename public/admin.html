@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin – Astrophiles</title>
+  <link rel="icon" href="/static/logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;1,9..40,300&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/shell.css">
+  <script src="/static/shell.js"></script>
+
+  <style>
+    .admin-gate   { display:none; text-align:center; padding:4rem 1rem; color:var(--muted); }
+    .admin-panel  { display:none; }
+
+    /* ── Page header ── */
+    .admin-header { padding:1.25rem 0 1rem; display:flex; align-items:center; gap:10px; }
+    .admin-header h1 { font-family:'Syne',sans-serif; font-weight:800; font-size:1.2rem; color:var(--error); }
+    .admin-tag { font-size:0.65rem; font-weight:700; text-transform:uppercase; letter-spacing:0.06em; padding:2px 8px; border-radius:5px; background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); color:var(--error); }
+
+    /* ── Tabs ── */
+    .admin-tabs { display:flex; border-bottom:1px solid var(--border); margin-bottom:1.25rem; }
+    .admin-tab  { flex:1; padding:0.65rem 0; text-align:center; font-size:0.88rem; font-weight:600; color:var(--muted); background:transparent; border:none; cursor:pointer; border-bottom:2px solid transparent; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+    .admin-tab.active { color:var(--fg); border-bottom-color:var(--error); }
+    .admin-tab:hover:not(.active) { color:var(--fg); }
+
+    /* ── Search ── */
+    .search-wrap { position:relative; margin-bottom:1rem; }
+    .search-input { width:100%; padding:0.7rem 1rem 0.7rem 2.4rem; background:rgba(12,18,32,0.7); border:1px solid var(--border); border-radius:11px; color:var(--fg); font-size:0.88rem; font-family:'DM Sans',sans-serif; outline:none; transition:border-color 0.2s; }
+    .search-input:focus { border-color:rgba(255,71,87,0.4); }
+    .search-input::placeholder { color:var(--muted); }
+    .search-icon { position:absolute; left:0.75rem; top:50%; transform:translateY(-50%); width:14px; height:14px; color:var(--muted); pointer-events:none; }
+
+    /* ── Stats bar ── */
+    .stats-bar { display:grid; grid-template-columns:repeat(3,1fr); gap:0.6rem; margin-bottom:1.25rem; }
+    .stat-card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:0.85rem 1rem; text-align:center; }
+    .stat-card .val { font-family:'Syne',sans-serif; font-weight:700; font-size:1.3rem; display:block; }
+    .stat-card .lbl { font-size:0.63rem; color:var(--muted); text-transform:uppercase; letter-spacing:0.05em; margin-top:2px; }
+
+    /* ── User rows ── */
+    .user-row { display:flex; align-items:center; gap:10px; padding:0.75rem 1rem; background:var(--card); border:1px solid var(--border); border-radius:13px; margin-bottom:0.5rem; animation:fadeUp 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .user-avatar { width:38px; height:38px; border-radius:50%; background:rgba(243,209,59,0.1); border:1px solid rgba(243,209,59,0.25); display:flex; align-items:center; justify-content:center; font-family:'Syne',sans-serif; font-weight:700; font-size:0.9rem; color:var(--accent); flex-shrink:0; }
+    .user-info { flex:1; min-width:0; }
+    .user-name { font-size:0.88rem; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .user-meta { font-size:0.7rem; color:var(--muted); margin-top:1px; }
+    .user-meta span { color:var(--accent); font-weight:600; }
+    .admin-badge { font-size:0.6rem; font-weight:700; padding:1px 5px; border-radius:4px; background:rgba(255,71,87,0.1); border:1px solid rgba(255,71,87,0.3); color:var(--error); margin-left:5px; text-transform:uppercase; }
+
+    /* ── Post rows ── */
+    .post-row { display:flex; align-items:flex-start; gap:10px; padding:0.75rem 1rem; background:var(--card); border:1px solid var(--border); border-radius:13px; margin-bottom:0.5rem; animation:fadeUp 0.25s cubic-bezier(0.16,1,0.3,1) both; }
+    .post-info { flex:1; min-width:0; }
+    .post-preview { font-size:0.82rem; color:var(--fg); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; opacity:0.85; }
+    .post-meta { font-size:0.7rem; color:var(--muted); }
+    .post-meta span { color:var(--accent); font-weight:600; }
+    .diff-badge { display:inline-block; font-size:0.6rem; font-weight:600; padding:1px 5px; border-radius:4px; text-transform:uppercase; margin-right:4px; }
+    .diff-1,.diff-2 { background:rgba(46,213,115,0.1); color:#2ed573; border:1px solid rgba(46,213,115,0.2); }
+    .diff-3 { background:rgba(243,209,59,0.1); color:var(--accent); border:1px solid rgba(243,209,59,0.2); }
+    .diff-4 { background:rgba(255,165,2,0.1); color:#ffa502; border:1px solid rgba(255,165,2,0.2); }
+    .diff-5 { background:rgba(255,71,87,0.1); color:var(--error); border:1px solid rgba(255,71,87,0.2); }
+
+    /* ── Delete button ── */
+    .btn-delete { flex-shrink:0; padding:0.35rem 0.75rem; border-radius:8px; border:1px solid rgba(255,71,87,0.3); background:rgba(255,71,87,0.07); color:var(--error); font-size:0.74rem; font-weight:700; font-family:'Syne',sans-serif; cursor:pointer; transition:all 0.18s; white-space:nowrap; }
+    .btn-delete:hover { background:rgba(255,71,87,0.18); border-color:rgba(255,71,87,0.55); }
+    .btn-delete:disabled { opacity:0.4; cursor:not-allowed; }
+
+    /* ── Confirm modal ── */
+    .modal-overlay { display:none; position:fixed; inset:0; z-index:2000; background:rgba(0,0,0,0.65); backdrop-filter:blur(6px); align-items:center; justify-content:center; padding:1rem; }
+    .modal-overlay.open { display:flex; }
+    .modal { background:#0c1220; border:1px solid var(--border); border-radius:18px; width:100%; max-width:400px; overflow:hidden; animation:modalIn 0.3s cubic-bezier(0.16,1,0.3,1) both; }
+    @keyframes modalIn { from{opacity:0;transform:scale(0.95)} to{opacity:1;transform:scale(1)} }
+    .modal-header { padding:1.25rem 1.5rem 0.75rem; border-bottom:1px solid var(--border); }
+    .modal-title  { font-family:'Syne',sans-serif; font-weight:700; font-size:1rem; color:var(--error); }
+    .modal-body   { padding:1rem 1.5rem; font-size:0.88rem; line-height:1.6; color:var(--muted); }
+    .modal-body strong { color:var(--fg); }
+    .modal-footer { padding:0.75rem 1.5rem 1.25rem; display:flex; gap:0.6rem; }
+    .btn-cancel   { flex:1; padding:0.65rem; border-radius:10px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:0.85rem; font-weight:600; cursor:pointer; font-family:'DM Sans',sans-serif; transition:all 0.2s; }
+    .btn-cancel:hover { color:var(--fg); }
+    .btn-confirm  { flex:1; padding:0.65rem; border-radius:10px; background:var(--error); color:#fff; font-size:0.85rem; font-weight:700; font-family:'Syne',sans-serif; border:none; cursor:pointer; transition:all 0.2s; }
+    .btn-confirm:hover { opacity:0.85; }
+    .btn-confirm:disabled { opacity:0.4; cursor:not-allowed; }
+
+    /* ── Empty / loading states ── */
+    .empty-state { text-align:center; padding:3rem 1rem; color:var(--muted); font-size:0.85rem; }
+    .sk { background:linear-gradient(90deg,rgba(255,255,255,0.04) 25%,rgba(255,255,255,0.08) 50%,rgba(255,255,255,0.04) 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; border-radius:6px; }
+    @keyframes shimmer { to{background-position:-200% 0} }
+    .sk-row { display:flex; align-items:center; gap:10px; padding:0.75rem 1rem; background:var(--card); border:1px solid var(--border); border-radius:13px; margin-bottom:0.5rem; }
+  </style>
+</head>
+<body>
+
+<div class="app-shell">
+  <div class="center-wrapper">
+    <div class="main-content">
+
+      <!-- Access denied state -->
+      <div class="admin-gate" id="adminGate">
+        <div style="font-size:2.5rem;margin-bottom:0.75rem;">🚫</div>
+        <h3 style="font-family:'Syne',sans-serif;font-weight:700;font-size:1rem;color:var(--fg);margin-bottom:0.4rem;">Access Denied</h3>
+        <p style="font-size:0.85rem;margin-bottom:1.25rem;">You don't have permission to view this page.</p>
+        <a href="/explore" style="padding:0.5rem 1rem;border-radius:9px;background:var(--accent-dim);border:1px solid rgba(243,209,59,0.3);color:var(--accent);font-size:0.82rem;font-weight:600;text-decoration:none;">← Back to Explore</a>
+      </div>
+
+      <!-- Admin panel (shown only to admins) -->
+      <div class="admin-panel" id="adminPanel">
+
+        <div class="admin-header">
+          <h1>⚙ Admin Panel</h1>
+          <span class="admin-tag">Restricted</span>
+        </div>
+
+        <div class="stats-bar">
+          <div class="stat-card"><span class="val" id="statTotalUsers">—</span><span class="lbl">Users</span></div>
+          <div class="stat-card"><span class="val" id="statTotalPosts">—</span><span class="lbl">Posts</span></div>
+          <div class="stat-card"><span class="val" id="statTotalSolves">—</span><span class="lbl">Solves</span></div>
+        </div>
+
+        <div class="admin-tabs">
+          <button class="admin-tab active" id="tab-users" onclick="switchTab('users')">👤 Accounts</button>
+          <button class="admin-tab" id="tab-posts" onclick="switchTab('posts')">📐 Posts</button>
+        </div>
+
+        <!-- Accounts tab -->
+        <div id="pane-users">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="userSearch" type="text" placeholder="Search users…" oninput="filterUsers(this.value)" autocomplete="off">
+          </div>
+          <div id="userList"></div>
+        </div>
+
+        <!-- Posts tab -->
+        <div id="pane-posts" style="display:none;">
+          <div class="search-wrap">
+            <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input class="search-input" id="postSearch" type="text" placeholder="Search posts…" oninput="filterPosts(this.value)" autocomplete="off">
+          </div>
+          <div id="postList"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Confirm delete modal -->
+<div class="modal-overlay" id="confirmModal">
+  <div class="modal">
+    <div class="modal-header">
+      <div class="modal-title" id="modalTitle">Confirm Delete</div>
+    </div>
+    <div class="modal-body" id="modalBody">Are you sure?</div>
+    <div class="modal-footer">
+      <button class="btn-cancel" onclick="closeModal()">Cancel</button>
+      <button class="btn-confirm" id="modalConfirmBtn" onclick="executeDelete()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<script>
+var ADMINS = ['hasan_ghaith_', 'greg'];
+var allUsers = [], allPosts = [];
+var pendingDelete = null; // { type: 'user'|'post', id, label }
+
+/* ══════ BOOT ══════ */
+document.addEventListener('DOMContentLoaded', function () {
+  Shell.init({ active: '' });
+  Shell.onMeReady(function () {
+    var me = Shell.me;
+    if (!me || !ADMINS.includes(me.username)) {
+      document.getElementById('adminGate').style.display  = 'block';
+      document.title = 'Access Denied – Astrophiles';
+      return;
+    }
+    document.getElementById('adminPanel').style.display = 'block';
+    loadData();
+  });
+  document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closeModal(); });
+});
+
+/* ══════ LOAD DATA ══════ */
+async function loadData() {
+  showSkeletons('userList', 5);
+  showSkeletons('postList', 5);
+
+  try {
+    var [ur, pr] = await Promise.all([
+      fetch('/api/admin/users',    { credentials: 'same-origin' }),
+      fetch('/api/admin/problems', { credentials: 'same-origin' }),
+    ]);
+    if (ur.ok) { var ud = await ur.json(); allUsers = ud.users    || []; }
+    if (pr.ok) { var pd = await pr.json(); allPosts = pd.problems || []; }
+  } catch (e) { console.error('[admin] loadData:', e); }
+
+  document.getElementById('statTotalUsers').textContent  = allUsers.length;
+  document.getElementById('statTotalPosts').textContent  = allPosts.length;
+  var totalSolves = allPosts.reduce(function (s, p) { return s + (+(p.correct_attempts || p.solves || 0)); }, 0);
+  document.getElementById('statTotalSolves').textContent = totalSolves;
+
+  renderUsers(allUsers);
+  renderPosts(allPosts);
+}
+
+/* ══════ TABS ══════ */
+function switchTab(t) {
+  document.getElementById('tab-users').classList.toggle('active', t === 'users');
+  document.getElementById('tab-posts').classList.toggle('active', t === 'posts');
+  document.getElementById('pane-users').style.display = t === 'users' ? 'block' : 'none';
+  document.getElementById('pane-posts').style.display = t === 'posts' ? 'block' : 'none';
+}
+
+/* ══════ RENDER USERS ══════ */
+function renderUsers(list) {
+  var el = document.getElementById('userList');
+  if (!list.length) { el.innerHTML = '<div class="empty-state">No users found.</div>'; return; }
+  el.innerHTML = '';
+  list.forEach(function (u, i) {
+    var name    = u.displayName || u.username || u.name || '?';
+    var handle  = u.username || '';
+    var elo     = Shell.userElo(u);
+    var isAdmin = ADMINS.includes(handle);
+    var row = document.createElement('div');
+    row.className = 'user-row';
+    row.style.animationDelay = (i * 0.03) + 's';
+    row.innerHTML =
+      '<div class="user-avatar">' + name[0].toUpperCase() + '</div>' +
+      '<div class="user-info">' +
+        '<div class="user-name">' + Shell.esc(name) +
+          (isAdmin ? '<span class="admin-badge">admin</span>' : '') +
+        '</div>' +
+        '<div class="user-meta">@' + Shell.esc(handle) + ' · <span>' + elo + ' Elo</span>' +
+          (u.createdAt ? ' · Joined ' + new Date(u.createdAt).toLocaleDateString('en-US',{month:'short',year:'numeric'}) : '') +
+        '</div>' +
+      '</div>' +
+      (!isAdmin
+        ? '<button class="btn-delete" onclick="confirmDelete(\'user\',\'' + Shell.esc(u._id) + '\',\'' + Shell.esc(name) + '\',this)">Delete</button>'
+        : '<span style="font-size:0.7rem;color:var(--muted);flex-shrink:0;">Protected</span>') ;
+    el.appendChild(row);
+  });
+}
+
+/* ══════ RENDER POSTS ══════ */
+var DIFF_LABELS = { 1:'Easy', 2:'Fair', 3:'Med', 4:'Hard', 5:'Pro' };
+
+function renderPosts(list) {
+  var el = document.getElementById('postList');
+  if (!list.length) { el.innerHTML = '<div class="empty-state">No posts found.</div>'; return; }
+  el.innerHTML = '';
+  list.forEach(function (p, i) {
+    var latex   = p.problem_text?.latex || p.problem_text || p.latex || '';
+    var preview = latex ? latex.replace(/[\\{}$]/g,'').substring(0,80) + '…' : '(no preview)';
+    var author  = p.creator_name || p.author || '?';
+    var diff    = p.difficulty || 1;
+    var attempts = +(p.total_attempts || 0);
+    var row = document.createElement('div');
+    row.className = 'post-row';
+    row.style.animationDelay = (i * 0.03) + 's';
+    row.innerHTML =
+      '<div class="post-info">' +
+        '<div class="post-preview">' +
+          '<span class="diff-badge diff-' + diff + '">' + (DIFF_LABELS[diff] || diff) + '</span>' +
+          Shell.esc(preview) +
+        '</div>' +
+        '<div class="post-meta">by <span>' + Shell.esc(author) + '</span>' +
+          ' · ' + attempts + ' attempt' + (attempts !== 1 ? 's' : '') +
+          (p.createdAt ? ' · ' + new Date(p.createdAt).toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}) : '') +
+        '</div>' +
+      '</div>' +
+      '<button class="btn-delete" onclick="confirmDelete(\'post\',\'' + Shell.esc(p._id) + '\',\'' + Shell.esc(preview.substring(0,40)) + '\',this)">Delete</button>';
+    el.appendChild(row);
+  });
+}
+
+/* ══════ FILTER ══════ */
+function filterUsers(q) {
+  var s = q.toLowerCase().trim();
+  renderUsers(s ? allUsers.filter(function (u) {
+    var name = u.displayName || u.username || u.name || '';
+    return name.toLowerCase().includes(s) || (u.username||'').toLowerCase().includes(s);
+  }) : allUsers);
+}
+function filterPosts(q) {
+  var s = q.toLowerCase().trim();
+  renderPosts(s ? allPosts.filter(function (p) {
+    var latex  = p.problem_text?.latex || p.problem_text || p.latex || '';
+    var author = p.creator_name || p.author || '';
+    return latex.toLowerCase().includes(s) || author.toLowerCase().includes(s);
+  }) : allPosts);
+}
+
+/* ══════ DELETE FLOW ══════ */
+function confirmDelete(type, id, label, btn) {
+  pendingDelete = { type: type, id: id, label: label, btn: btn };
+  document.getElementById('modalTitle').textContent = type === 'user' ? 'Delete Account' : 'Delete Post';
+  document.getElementById('modalBody').innerHTML =
+    'Are you sure you want to permanently delete <strong>' + Shell.esc(label) + '</strong>? This cannot be undone.';
+  document.getElementById('confirmModal').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('confirmModal').classList.remove('open');
+  pendingDelete = null;
+}
+
+async function executeDelete() {
+  if (!pendingDelete) return;
+  var { type, id, label, btn } = pendingDelete;
+  var confirmBtn = document.getElementById('modalConfirmBtn');
+  confirmBtn.disabled = true;
+  confirmBtn.textContent = 'Deleting…';
+
+  var url = type === 'user'
+    ? '/api/admin/users/'    + encodeURIComponent(id)
+    : '/api/admin/problems/' + encodeURIComponent(id);
+
+  try {
+    var r = await fetch(url, { method: 'DELETE', credentials: 'same-origin' });
+    if (r.ok) {
+      closeModal();
+      Shell.showToast((type === 'user' ? 'Account' : 'Post') + ' deleted.', 'success');
+      if (type === 'user') {
+        allUsers = allUsers.filter(function (u) { return u._id !== id; });
+        document.getElementById('statTotalUsers').textContent = allUsers.length;
+        renderUsers(allUsers);
+      } else {
+        allPosts = allPosts.filter(function (p) { return p._id !== id; });
+        document.getElementById('statTotalPosts').textContent = allPosts.length;
+        renderPosts(allPosts);
+      }
+    } else {
+      var d = await r.json().catch(function(){return{};});
+      Shell.showToast(d.message || 'Delete failed', 'error');
+    }
+  } catch (e) {
+    Shell.showToast('Connection error', 'error');
+  } finally {
+    confirmBtn.disabled = false;
+    confirmBtn.textContent = 'Delete';
+  }
+}
+
+/* ══════ SKELETONS ══════ */
+function showSkeletons(containerId, n) {
+  document.getElementById(containerId).innerHTML = Array.from({ length: n }, function () {
+    return '<div class="sk-row"><div class="sk" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="sk" style="width:120px;height:12px;margin-bottom:6px;"></div><div class="sk" style="width:80px;height:10px;"></div></div><div class="sk" style="width:60px;height:28px;border-radius:8px;flex-shrink:0;"></div></div>';
+  }).join('');
+}
+</script>
+</body>
+</html>

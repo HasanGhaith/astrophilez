@@ -48,7 +48,7 @@ const IC = {
 const CMAP = (()=>{
   const codes = ['AF','AL','DZ','AD','AO','AG','AR','AM','AU','AT','AZ','BS','BH','BD','BB','BY','BE','BZ','BJ','BT','BO','BA','BW','BR','BN','BG','BF','BI','CV','KH','CM','CA','CF','TD','CL','CN','CO','KM','CG','CR','HR','CU','CY','CZ','DK','DJ','DM','DO','EC','EG','SV','GQ','ER','EE','SZ','ET','FJ','FI','FR','GA','GM','GE','DE','GH','GR','GD','GT','GN','GW','GY','HT','HN','HU','IS','IN','ID','IR','IQ','IE','IL','IT','JM','JP','JO','KZ','KE','KI','KP','KR','KW','KG','LA','LV','LB','LS','LR','LY','LI','LT','LU','MG','MW','MY','MV','ML','MT','MH','MR','MU','MX','FM','MD','MC','MN','ME','MA','MZ','MM','NA','NR','NP','NL','NZ','NI','NE','NG','MK','NO','OM','PK','PW','PA','PG','PY','PE','PH','PL','PT','QA','RO','RU','RW','KN','LC','VC','WS','SM','ST','SA','SN','RS','SC','SL','SG','SK','SI','SB','SO','ZA','SS','ES','LK','SD','SR','SE','CH','SY','TW','TJ','TZ','TH','TL','TG','TO','TT','TN','TR','TM','TV','UG','UA','AE','GB','US','UY','UZ','VU','VE','VN','YE','ZM','ZW'];
   const m = {};
-  codes.forEach(x => { m[x] = x.split('').map(ch => String.fromCodePoint(0x1F1E0 + ch.charCodeAt(0) - 65)).join(''); });
+  codes.forEach(x => { m[x] = x.split('').map(ch => String.fromCodePoint(0x1F1E6 + ch.charCodeAt(0) - 65)).join(''); });
   return m;
 })();
 
@@ -379,9 +379,7 @@ function _buildFriendsSidebar() {
       <div class="sk-friend"><div class="sk" style="width:34px;height:34px;border-radius:50%;flex-shrink:0;"></div><div style="flex:1;"><div class="sk" style="width:90px;height:11px;margin-bottom:5px;"></div><div class="sk" style="width:55px;height:9px;"></div></div></div>
     </div>
     <div class="lb-sidebar-section" id="shell-sidebar-lb" style="display:none;">
-      <div class="lb-sidebar-title">🏆 Top Players</div>
-      <div id="shell-sidebar-lb-list"></div>
-    </div>
+      
   </aside>`;
 }
 

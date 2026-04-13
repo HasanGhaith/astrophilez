@@ -89,29 +89,33 @@ async function startServer() {
 
     // ── LEADERBOARD ──────────────────────────
     app.get('/api/leaderboard', requireAuth, async (req, res) => {
-      try {
-        const users = await usersCollection
-          .find({}, { projection: { displayName: 1, solver_points: 1, creator_points: 1, country: 1, _id: 0 } })
-          .toArray();
+  try {
+    const users = await usersCollection
+      .find({}, {
+        projection: {
+          displayName:   1,
+          username:      1,
+          solver_rating: 1,
+          country:       1,
+        }
+      })
+      .sort({ solver_rating: -1 })
+      .toArray();
 
-        const sanitized = users
-          .map(u => ({
-            name:           u.displayName ?? 'Anonymous',
-            solver_points:  u.solver_points  ?? 0,
-            creator_points: u.creator_points ?? 0,
-            country:        u.country ?? null,
-          }))
-          .sort((a, b) =>
-            (b.solver_points + b.creator_points) - (a.solver_points + a.creator_points)
-          );
+    const sanitized = users.map(u => ({
+      _id:           u._id.toString(),
+      name:          u.displayName ?? u.username ?? 'Anonymous',
+      username:      u.username ?? '',
+      solver_rating: u.solver_rating ?? 800,
+      country:       u.country ?? null,
+    }));
 
-        res.json({ success: true, users: sanitized });
-      } catch (err) {
-        console.error('GET /api/leaderboard error:', err);
-        res.status(500).json({ success: false, message: 'Server error' });
-      }
-    });
-
+    res.json({ success: true, users: sanitized });
+  } catch (err) {
+    console.error('GET /api/leaderboard error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
     // ── MAP DATA ─────────────────────────────
     app.get('/api/map', requireAuth, async (req, res) => {
       try {
@@ -416,6 +420,115 @@ async function startServer() {
         res.status(500).json({ success: false, message: 'Server error' });
       }
     });
+
+    // ── ADMIN: list all users ────────────────────
+// Only hasan_ghaith_ and greg can access this
+const ADMIN_USERNAMES = ['hasan_ghaith_', 'greg'];
+
+app.get('/api/admin/users', requireAuth, async (req, res) => {
+  try {
+    const me = await usersCollection.findOne({ _id: new ObjectId(req.user.userId) });
+    if (!me || !ADMIN_USERNAMES.includes(me.username))
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const users = await usersCollection
+      .find({}, {
+        projection: {
+          passwordHash: 0, refreshTokens: 0,
+          verificationToken: 0, verificationExpires: 0,
+        }
+      })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const sanitized = users.map(u => ({
+      ...u,
+      _id:       u._id.toString(),
+      followers: (u.followers || []).length,
+      following: (u.following || []).length,
+    }));
+
+    res.json({ success: true, users: sanitized });
+  } catch (err) {
+    console.error('GET /api/admin/users error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ── ADMIN: delete a user account ─────────────
+app.delete('/api/admin/users/:userId', requireAuth, async (req, res) => {
+  try {
+    const me = await usersCollection.findOne({ _id: new ObjectId(req.user.userId) });
+    if (!me || !ADMIN_USERNAMES.includes(me.username))
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const target = await usersCollection.findOne({ _id: new ObjectId(req.params.userId) });
+    if (!target)
+      return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Prevent deleting other admins
+    if (ADMIN_USERNAMES.includes(target.username))
+      return res.status(400).json({ success: false, message: 'Cannot delete an admin account' });
+
+    await usersCollection.deleteOne({ _id: new ObjectId(req.params.userId) });
+
+    // Also delete their problems
+    await db.collection('problems').deleteMany({ creator_id: new ObjectId(req.params.userId) });
+
+    res.json({ success: true, message: 'User and their problems deleted' });
+  } catch (err) {
+    console.error('DELETE /api/admin/users/:userId error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ── ADMIN: list all problems ──────────────────
+app.get('/api/admin/problems', requireAuth, async (req, res) => {
+  try {
+    const me = await usersCollection.findOne({ _id: new ObjectId(req.user.userId) });
+    if (!me || !ADMIN_USERNAMES.includes(me.username))
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const problems = await db.collection('problems')
+      .find({}, { projection: { correct_answer: 0, reported_by: 0, upvoted_by: 0 } })
+      .sort({ createdAt: -1 })
+      .toArray();
+
+    const sanitized = problems.map(p => ({
+      ...p,
+      _id:        p._id.toString(),
+      creator_id: p.creator_id?.toString() ?? null,
+    }));
+
+    res.json({ success: true, problems: sanitized });
+  } catch (err) {
+    console.error('GET /api/admin/problems error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
+
+// ── ADMIN: delete a problem ───────────────────
+app.delete('/api/admin/problems/:problemId', requireAuth, async (req, res) => {
+  try {
+    const me = await usersCollection.findOne({ _id: new ObjectId(req.user.userId) });
+    if (!me || !ADMIN_USERNAMES.includes(me.username))
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+
+    const result = await db.collection('problems')
+      .deleteOne({ _id: new ObjectId(req.params.problemId) });
+
+    if (result.deletedCount === 0)
+      return res.status(404).json({ success: false, message: 'Problem not found' });
+
+    // Also clean up any attempts on this problem
+    await db.collection('attempts').deleteMany({ problem_id: new ObjectId(req.params.problemId) });
+
+    res.json({ success: true, message: 'Problem deleted' });
+  } catch (err) {
+    console.error('DELETE /api/admin/problems/:problemId error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
     // ─────────────────────────────────────────
     // Static files (must come AFTER all API routes)
