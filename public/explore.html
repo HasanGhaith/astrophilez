@@ -560,6 +560,17 @@ function discoverEmpty() {
    ══════════════════════════════════════════ */
 document.addEventListener('DOMContentLoaded', function () {
   Shell.init({ active: 'explore' });
+
+  // Handle leaderboard nav button (Shell.goToLeaderboard dispatches hashchange)
+  function handleHash() {
+    if (window.location.hash === '#leaderboard') {
+      activatePage('leaderboard');
+    } else {
+      activatePage('explore');
+    }
+  }
+  window.addEventListener('hashchange', handleHash);
+  handleHash(); // run on initial load too
   
   Shell.onMeReady(function () {
   var me = Shell.me;

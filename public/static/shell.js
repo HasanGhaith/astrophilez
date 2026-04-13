@@ -102,6 +102,22 @@ function showToast(msg, type = '') {
   setTimeout(() => { el.classList.remove('show'); setTimeout(() => el.remove(), 400); }, 3000);
 }
 
+/* ── Leaderboard navigation ──
+   Using window.location.href = '/explore#leaderboard' is a no-op when the
+   user is already on /explore — the browser sees no URL change and does
+   nothing. This helper handles that case by scrolling directly to the
+   element and dispatching a hashchange event so the page can react. ── */
+function goToLeaderboard() {
+  if (window.location.pathname === '/explore') {
+    const el = document.getElementById('leaderboard');
+    if (el) el.scrollIntoView({ behavior: 'smooth' });
+    history.replaceState(null, '', '/explore#leaderboard');
+    window.dispatchEvent(new HashChangeEvent('hashchange'));
+  } else {
+    window.location.href = '/explore#leaderboard';
+  }
+}
+
 /* ── Starfield ── */
 function initStarfield() {
   const canvas = document.getElementById('starfield');
@@ -324,7 +340,7 @@ function _buildSidenav(active) {
     const isArena   = key === 'arena' ? ' arena-item' : '';
     const isButton  = key === 'leaderboard';
     const tag       = isButton ? 'button' : 'a';
-    const hrefAttr  = isButton ? `onclick="window.location.href='/explore#leaderboard'"` : `href="${href}"`;
+    const hrefAttr  = isButton ? `onclick="Shell.goToLeaderboard()"` : `href="${href}"`;
     return `<${tag} ${hrefAttr} class="nav-item${isActive}${isArena}" ${extra}>${IC[key]}${label}</${tag}>`;
   };
   return `
@@ -388,7 +404,7 @@ function _buildBottomNav(active) {
     const isActive = active === key ? ' active' : '';
     const isArena  = key === 'arena' ? ' arena' : '';
     if (key === 'leaderboard') {
-      return `<button class="bottom-nav-item${isActive}" onclick="window.location.href='/explore#leaderboard'">${IC[key]}${label}</button>`;
+      return `<button class="bottom-nav-item${isActive}" onclick="Shell.goToLeaderboard()">${IC[key]}${label}</button>`;
     }
     return `<a href="${href}" class="bottom-nav-item${isActive}${isArena} ${cls}">${IC[key]}${label}</a>`;
   };
@@ -467,6 +483,7 @@ window.Shell = {
   getRank,
   esc,
   goToProfile,
+  goToLeaderboard,
   toggleSidenav,
   toggleFriendsSidebar,
   closeAllPanels,
