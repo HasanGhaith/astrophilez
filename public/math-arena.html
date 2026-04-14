@@ -609,7 +609,7 @@
       <div class="mode-hero">
         <h2>Choose your <span>game mode</span></h2>
         <p>Test your skills, climb the ranks.</p>
-        <a href="/dashboard" style="display:inline-flex;align-items:center;gap:6px;margin-top:1rem;padding:7px 18px;border-radius:8px;border:1px solid var(--border);color:var(--muted);font-size:0.82rem;font-weight:500;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.color='var(--fg)';this.style.borderColor='var(--muted)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">← Dashboard</a>
+        <a href="/explore" style="display:inline-flex;align-items:center;gap:6px;margin-top:1rem;padding:7px 18px;border-radius:8px;border:1px solid var(--border);color:var(--muted);font-size:0.82rem;font-weight:500;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.color='var(--fg)';this.style.borderColor='var(--muted)'" onmouseout="this.style.color='var(--muted)';this.style.borderColor='var(--border)'">← Explore</a>
       </div>
       <div class="modes-grid">
 
@@ -749,21 +749,21 @@ function updateEloDisplay(elo) {
    NETWORK
 =================================================== */
 async function fetchElo() {
-  const res = await fetch('/challenges/elo');
+  const res = await fetch('/matharena/elo');
   if (res.status === 401) { location.href = '/auth'; return null; }
   const j = await res.json();
   return j.elo ?? 1500;
 }
 
 async function fetchProblems() {
-  const res = await fetch('/challenges/problems');
+  const res = await fetch('/matharena/problems');
   if (res.status === 401) { location.href = '/auth'; return null; }
   return res.json();
 }
 
 async function submitAnswer(problemId, correct, mode) {
   try {
-    const res = await fetch('/challenges/submit', {
+    const res = await fetch('/matharena/submit', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({ problemId, correct, mode })
@@ -776,7 +776,7 @@ async function submitAnswer(problemId, correct, mode) {
 // session-end: called for blitz and survival only (daily is localStorage-only)
 async function callSessionEnd(payload) {
   try {
-    const res = await fetch('/challenges/session-end', {
+    const res = await fetch('/matharena/session-end', {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify(payload)

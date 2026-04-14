@@ -57,6 +57,10 @@ async function startServer() {
     const challengesRouter = require('./challenges/challenges');
     app.use('/challenges', challengesRouter);
 
+// ── Mount math arena router
+const mathArenaRouter = require('./matharena/math-arena');
+app.use('/matharena', mathArenaRouter);
+
     // ══════════════════════════════════════════
     // API ROUTES
     // Add new feature routes below — each should
@@ -167,6 +171,12 @@ async function startServer() {
       }
     });
 
+
+
+
+
+
+    
     // ── UPDATE BIO ───────────────────────────
     const bioLimiter = rateLimit({
       windowMs: 60 * 1000, max: 5,
@@ -191,6 +201,49 @@ async function startServer() {
         res.status(500).json({ success: false, message: 'Server error' });
       }
     });
+
+
+    // ── UPDATE OWN PROFILE (display name, bio, country) ──
+app.patch('/api/profile/me', requireAuth, bioLimiter, async (req, res) => {
+  const { displayName, bio, country } = req.body;
+
+  const update = {};
+
+  if (displayName !== undefined) {
+    const name = displayName.trim();
+    if (!name || name.length < 2 || name.length > 40)
+      return res.status(400).json({ success: false, message: 'Display name must be 2–40 characters' });
+    update.displayName = name;
+  }
+
+  if (bio !== undefined) {
+    const trimmed = bio.trim();
+    if (trimmed.length > 200)
+      return res.status(400).json({ success: false, message: 'Bio must be 200 characters or less' });
+    update.bio = trimmed;
+  }
+
+  if (country !== undefined) {
+    const code = country.toUpperCase();
+    if (country !== '' && !VALID_COUNTRY_CODES.has(code))
+      return res.status(400).json({ success: false, message: 'Invalid country' });
+    update.country = country === '' ? null : code;
+  }
+
+  if (!Object.keys(update).length)
+    return res.status(400).json({ success: false, message: 'Nothing to update' });
+
+  try {
+    await usersCollection.updateOne(
+      { _id: new ObjectId(req.user.userId) },
+      { $set: update }
+    );
+    res.json({ success: true, message: 'Profile updated' });
+  } catch (err) {
+    console.error('PATCH /api/profile/me error:', err);
+    res.status(500).json({ success: false, message: 'Server error' });
+  }
+});
 
     // ── UPDATE USERNAME (once per week) ──────
     app.post('/api/profile/username', requireAuth, authLimiter, async (req, res) => {
