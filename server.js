@@ -67,6 +67,8 @@ app.use('/matharena', mathArenaRouter);
     // ideally live in its own file under /routes/
     // ══════════════════════════════════════════
 
+
+
     // ── GET CURRENT USER (from JWT) ──────────
     app.get('/api/me', requireAuth, (req, res) => {
       res.json({
@@ -594,7 +596,7 @@ app.delete('/api/admin/problems/:problemId', requireAuth, async (req, res) => {
     const page = (file) => (_req, res) => res.sendFile(path.join(__dirname, 'public', file));
     app.get('/',               page('index.html'));
     app.get('/auth',           page('auth.html'));
-    app.get('/dashboard',      page('dashboard.html'));
+    app.get('/leaderboard',      page('leaderboard.html'));
     app.get('/profile',        page('profile.html'));
     app.get('/explore',        page('explore.html'));
     app.get('/create',         page('create.html'));

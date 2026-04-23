@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Math Arena</title>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: Georgia, serif;
+    background: #f5f4ef;
+    color: #1a1a1a;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+  }
+
+  #app { width: 100%; max-width: 640px; }
+
+  #header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 1.4rem;
+    font-size: 0.85rem;
+    color: #666;
+  }
+  #header strong { font-size: 1.1rem; color: #1a1a1a; }
+
+  /* difficulty pill nav */
+  #diff-nav {
+    display: flex;
+    gap: 2px;
+    background: #e4e3de;
+    border-radius: 20px;
+    padding: 3px;
+    margin-bottom: 1.8rem;
+    width: fit-content;
+  }
+  #diff-nav button {
+    border: none;
+    background: transparent;
+    border-radius: 16px;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    font-family: monospace;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    color: #666;
+    transition: background 0.15s, color 0.15s;
+  }
+  #diff-nav button.active { background: #1a1a1a; color: #fff; }
+  #diff-nav button:hover:not(.active) { background: #d0cfc9; color: #1a1a1a; }
+
+  .badge {
+    display: inline-block;
+    font-family: monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 2px 8px;
+    border-radius: 2px;
+    margin-bottom: 1rem;
+  }
+  .badge.easy   { background: #d4edda; color: #1a5e2e; }
+  .badge.medium { background: #fff3cd; color: #7a4e00; }
+  .badge.hard   { background: #f8d7da; color: #7a0000; }
+
+  #meta { font-size: 0.8rem; color: #aaa; margin-bottom: 1.4rem; }
+
+  #question-box {
+    background: #fff;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 1.6rem 1.8rem;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    margin-bottom: 1.4rem;
+    min-height: 80px;
+  }
+
+  #options { display: flex; flex-direction: column; gap: 0.6rem; }
+
+  .option {
+    background: #fff;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 0.8rem 1.2rem;
+    cursor: pointer;
+    font-size: 0.95rem;
+    font-family: Georgia, serif;
+    text-align: left;
+    transition: border-color 0.15s, background 0.15s;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+  }
+  .option:hover:not(:disabled) { border-color: #999; background: #fafaf7; }
+  .option .label { font-family: monospace; font-size: 0.8rem; color: #aaa; min-width: 16px; }
+  .option.correct { border-color: #2d7a46; background: #edf7f0; }
+  .option.wrong   { border-color: #c0392b; background: #fdf0ef; }
+  .option.reveal  { border-color: #2d7a46; background: #edf7f0; }
+  .option:disabled { cursor: default; }
+
+  #feedback { margin-top: 1.2rem; font-size: 0.9rem; color: #555; min-height: 1.4em; }
+  #feedback.ok   { color: #2d7a46; }
+  #feedback.fail { color: #c0392b; }
+
+  #explanation { margin-top: 0.8rem; font-size: 0.85rem; color: #666; font-style: italic; min-height: 1em; }
+
+  #next-btn {
+    margin-top: 1.6rem;
+    padding: 0.65rem 1.6rem;
+    background: #1a1a1a;
+    color: #fff;
+    border: none;
+    border-radius: 3px;
+    font-size: 0.9rem;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    display: none;
+  }
+  #next-btn:hover { background: #333; }
+
+  #exhausted {
+    display: none;
+    text-align: center;
+    padding: 2.5rem 0;
+  }
+  #exhausted p { color: #888; font-size: 0.9rem; margin-bottom: 1.2rem; line-height: 1.6; }
+  #reset-btn {
+    padding: 0.5rem 1.2rem;
+    background: transparent;
+    border: 1px solid #bbb;
+    border-radius: 3px;
+    font-size: 0.85rem;
+    font-family: Georgia, serif;
+    cursor: pointer;
+    color: #555;
+  }
+  #reset-btn:hover { border-color: #666; color: #1a1a1a; }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="header">
+    <strong>Math Arena</strong>
+    <span id="score-display">0 correct</span>
+  </div>
+
+  <div id="diff-nav">
+    <button data-diff="random" class="active">random</button>
+    <button data-diff="easy">easy</button>
+    <button data-diff="medium">med</button>
+    <button data-diff="hard">hard</button>
+  </div>
+
+  <div><span class="badge" id="diff-badge"></span></div>
+  <div id="meta"></div>
+  <div id="question-box"></div>
+  <div id="options"></div>
+  <div id="feedback"></div>
+  <div id="explanation"></div>
+  <button id="next-btn">Next →</button>
+
+  <div id="exhausted">
+    <p>You've seen every problem in this category.<br>Reset to start fresh.</p>
+    <button id="reset-btn">Reset seen problems</button>
+  </div>
+</div>
+
+<script>
+const DEMO = [
+  { question:"\\frac{d}{dx}\\left[x^3\\right]", options:["3x^2","x^2","3x^3","2x^3"], correct_index:0, difficulty:"easy", topic:"Derivatives", explanation:"Power rule: nx^{n-1} = 3x^2" },
+  { question:"\\int 2x\\,dx", options:["x^2+C","2x^2+C","x+C","2+C"], correct_index:0, difficulty:"easy", topic:"Integrals", explanation:"Power rule: x^2 + C" },
+  { question:"\\lim_{x\\to 0}\\frac{\\sin x}{x}", options:["1","0","\\infty","\\frac{1}{2}"], correct_index:0, difficulty:"hard", topic:"Limits", explanation:"Standard limit = 1" },
+];
+
+let allProblems = [];
+let queue = [];
+let current = null;
+let score = 0;
+let answered = false;
+let activeDiff = 'random';
+let seenIds = new Set(); // in-memory mirror of the user's arena_seen on the server
+
+// ── Server-backed seen tracking ───────────────────────────────────────────────
+async function fetchSeen() {
+  try {
+    const res = await fetch('/api/arena/seen', { credentials: 'include' });
+    const data = await res.json();
+    if (data.success) seenIds = new Set(data.seen);
+  } catch { seenIds = new Set(); }
+}
+
+async function markSeen(id) {
+  seenIds.add(id); // update in memory immediately so the queue filters correctly
+  try {
+    await fetch('/api/arena/seen', {
+      method: 'POST',
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id }),
+    });
+  } catch { /* non-fatal — in-memory set still prevents repeats this session */ }
+}
+
+async function resetSeen() {
+  seenIds.clear();
+  try {
+    await fetch('/api/arena/seen', { method: 'DELETE', credentials: 'include' });
+  } catch {}
+}
+
+// ── Shuffle ───────────────────────────────────────────────────────────────────
+function shuffle(arr) {
+  const a = [...arr];
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [a[i], a[j]] = [a[j], a[i]];
+  }
+  return a;
+}
+
+// ── Build unseen queue for active difficulty ──────────────────────────────────
+function buildQueue() {
+  const pool = activeDiff === 'random'
+    ? allProblems
+    : allProblems.filter(p => p.difficulty === activeDiff);
+  queue = shuffle(pool.filter(p => !seenIds.has(p.id)));
+}
+
+// ── Init ──────────────────────────────────────────────────────────────────────
+async function init() {
+  try {
+    const res = await fetch('problem-bank.json');
+    if (!res.ok) throw new Error();
+    allProblems = await res.json();
+  } catch {
+    allProblems = DEMO;
+  }
+  score = 0;
+  await fetchSeen();   // load user's seen IDs from server before building queue
+  buildQueue();
+  showNext();
+}
+
+// ── Show next problem ─────────────────────────────────────────────────────────
+function showNext() {
+  if (queue.length === 0) buildQueue(); // try once more (e.g. after reset)
+
+  if (queue.length === 0) {
+    // all problems in this difficulty have been seen
+    document.getElementById('question-box').style.visibility = 'hidden';
+    document.getElementById('options').innerHTML = '';
+    document.getElementById('diff-badge').textContent = '';
+    document.getElementById('meta').textContent = '';
+    document.getElementById('feedback').textContent = '';
+    document.getElementById('explanation').textContent = '';
+    document.getElementById('next-btn').style.display = 'none';
+    document.getElementById('exhausted').style.display = 'block';
+    return;
+  }
+
+  document.getElementById('exhausted').style.display = 'none';
+  document.getElementById('question-box').style.visibility = 'visible';
+
+  current = queue.shift();
+async function showNext() {
+  
+  await markSeen(current.id);
+  
+}
+  answered = false;
+  render();
+}
+
+// ── Render ────────────────────────────────────────────────────────────────────
+function render() {
+  const p = current;
+
+  document.getElementById('score-display').textContent = `${score} correct`;
+  document.getElementById('meta').textContent = p.topic;
+
+  const badge = document.getElementById('diff-badge');
+  badge.textContent = p.difficulty;
+  badge.className = `badge ${p.difficulty}`;
+
+  document.getElementById('question-box').innerHTML = `\\(${p.question}\\)`;
+
+  const labels = ['A','B','C','D'];
+  const container = document.getElementById('options');
+  container.innerHTML = '';
+  p.options.forEach((opt, i) => {
+    const btn = document.createElement('button');
+    btn.className = 'option';
+    btn.innerHTML = `<span class="label">${labels[i]}</span><span>\\(${opt}\\)</span>`;
+    btn.onclick = () => choose(i);
+    container.appendChild(btn);
+  });
+
+  document.getElementById('feedback').textContent = '';
+  document.getElementById('feedback').className = '';
+  document.getElementById('explanation').textContent = '';
+  document.getElementById('next-btn').style.display = 'none';
+
+  if (window.MathJax) MathJax.typesetPromise();
+}
+
+// ── Choose answer ─────────────────────────────────────────────────────────────
+function choose(i) {
+  if (answered) return;
+  answered = true;
+
+  const p = current;
+  const btns = document.querySelectorAll('.option');
+  btns.forEach(b => b.disabled = true);
+
+  const fb = document.getElementById('feedback');
+  if (i === p.correct_index) {
+    btns[i].classList.add('correct');
+    fb.textContent = '✓ Correct';
+    fb.className = 'ok';
+    score++;
+  } else {
+    btns[i].classList.add('wrong');
+    btns[p.correct_index].classList.add('reveal');
+    fb.textContent = '✗ Wrong';
+    fb.className = 'fail';
+  }
+
+  document.getElementById('score-display').textContent = `${score} correct`;
+
+  if (p.explanation) {
+    document.getElementById('explanation').innerHTML = `\\(${p.explanation}\\)`;
+    if (window.MathJax) MathJax.typesetPromise();
+  }
+
+  document.getElementById('next-btn').style.display = 'inline-block';
+}
+
+// ── Difficulty nav ────────────────────────────────────────────────────────────
+document.querySelectorAll('#diff-nav button').forEach(btn => {
+  btn.onclick = () => {
+    if (btn.dataset.diff === activeDiff) return;
+    activeDiff = btn.dataset.diff;
+    document.querySelectorAll('#diff-nav button').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    buildQueue();
+    showNext();
+  };
+});
+
+document.getElementById('next-btn').onclick = showNext;
+
+document.getElementById('reset-btn').onclick = async () => {
+  await resetSeen();
+  buildQueue();
+  document.getElementById('exhausted').style.display = 'none';
+  showNext();
+};
+
+init();
+</script>
+</body>
+</html>

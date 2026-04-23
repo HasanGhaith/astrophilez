@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Leaderboard – Math Arena</title>
+   <script src="/api.js" defer></script>
+  <script src="/static/shell.js" defer></script> 
+  <link rel="icon" href="logo.png" type="image/png">
+  <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/shell.css">
+  
+
+  <style>
+    /* ─── TOKENS ────────────────────────────────── */
+    :root {
+      --gold:      #f0c040;
+      --gold-dim:  rgba(240,192,64,0.14);
+      --gold-glow: rgba(240,192,64,0.32);
+      --silver:    #c0cfe8;
+      --bronze:    #cd7c4a;
+      --radius:    14px;
+    }
+
+    /* ─── GRID TEXTURE ──────────────────────────── */
+    .app-shell::before {
+      content: '';
+      position: fixed; inset: 0; pointer-events: none; z-index: 0;
+      background-image:
+        linear-gradient(rgba(240,192,64,0.025) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(240,192,64,0.025) 1px, transparent 1px);
+      background-size: 60px 60px;
+    }
+
+    /* ─── GOLD TOP RULE ─────────────────────────── */
+    .app-shell::after {
+      content: '';
+      position: fixed; top: 0; left: 0; right: 0; height: 3px; z-index: 200;
+      background: linear-gradient(90deg, transparent, var(--gold), transparent);
+    }
+
+    /* ─── PAGE HEADER ───────────────────────────── */
+    .lb-page-header {
+      display: flex; align-items: center; gap: 10px;
+      padding: 1.4rem 0 1rem;
+      font-family: 'DM Sans', sans-serif;
+      font-weight: 800; font-size: 1.15rem; letter-spacing: -.01em;
+    }
+    .lb-page-header svg { color: var(--gold); flex-shrink: 0; }
+
+    /* ─── LIVE BADGE ────────────────────────────── */
+    .live-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      font-size: .65rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: 2px 8px; border-radius: 20px;
+      color: var(--success); background: rgba(46,213,115,0.08);
+      border: 1px solid rgba(46,213,115,0.2); margin-left: auto;
+    }
+    .live-dot {
+      width: 6px; height: 6px; border-radius: 50%; background: var(--success);
+      animation: livePulse 1.5s ease-in-out infinite;
+    }
+    @keyframes livePulse { 0%,100%{opacity:1;transform:scale(1);} 50%{opacity:.4;transform:scale(.7);} }
+
+    /* ─── SEARCH ────────────────────────────────── */
+    .search-wrap { position: relative; margin-bottom: 1.1rem; }
+    .search-icon {
+      position: absolute; left: .85rem; top: 50%; transform: translateY(-50%);
+      width: 15px; height: 15px; color: var(--muted); pointer-events: none;
+    }
+    .search-input {
+      width: 100%; padding: .72rem 1rem .72rem 2.4rem;
+      background: rgba(12,18,32,.7); border: 1px solid var(--border);
+      border-radius: 12px; color: var(--fg);
+      font-size: .88rem; font-family: 'DM Sans', sans-serif;
+      outline: none; box-sizing: border-box;
+      transition: border-color .2s, box-shadow .2s;
+    }
+    .search-input:focus {
+      border-color: rgba(240,192,64,.4);
+      box-shadow: 0 0 0 3px rgba(240,192,64,.07);
+    }
+    .search-input::placeholder { color: var(--muted); }
+
+    /* ─── SECTION LABEL ─────────────────────────── */
+    .section-label {
+      font-size: .67rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .08em; color: var(--muted);
+      display: flex; align-items: center; gap: 6px;
+      margin-bottom: .65rem;
+    }
+
+    /* ─── PODIUM ────────────────────────────────── */
+    .podium-wrapper {
+      display: flex; align-items: flex-end; justify-content: center;
+      margin-bottom: 2rem;
+      animation: fadeUp .5s .05s ease both;
+    }
+    .podium-slot {
+      display: flex; flex-direction: column; align-items: center;
+      flex: 1; max-width: 200px;
+    }
+    .podium-slot.rank-1 { order: 2; }
+    .podium-slot.rank-2 { order: 1; }
+    .podium-slot.rank-3 { order: 3; }
+
+    .podium-avatar {
+      border-radius: 50%; display: grid; place-items: center;
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      border: 2px solid transparent; margin-bottom: .55rem;
+      position: relative; z-index: 2;
+      width: 58px; height: 58px; font-size: 1.3rem;
+      cursor: pointer; transition: transform .2s;
+    }
+    .podium-avatar:hover { transform: scale(1.06); }
+    .rank-1 .podium-avatar {
+      width: 74px; height: 74px; font-size: 1.7rem;
+      background: radial-gradient(circle at 35% 35%, #fde68a, var(--gold));
+      border-color: var(--gold); color: #04060d;
+      box-shadow: 0 0 26px var(--gold-glow);
+    }
+    .rank-2 .podium-avatar {
+      background: radial-gradient(circle at 35% 35%, #e2e8f8, #9aaacf);
+      border-color: var(--silver); color: #0e1528;
+    }
+    .rank-3 .podium-avatar {
+      background: radial-gradient(circle at 35% 35%, #f5ba8a, var(--bronze));
+      border-color: var(--bronze); color: #04060d;
+    }
+    /* Crown */
+    .rank-1 .podium-avatar::before {
+      content: '👑'; position: absolute; top: -22px; left: 50%;
+      transform: translateX(-50%); font-size: 1rem;
+    }
+
+    .podium-name {
+      font-weight: 700; font-size: .85rem; text-align: center;
+      max-width: 110px; overflow: hidden; text-overflow: ellipsis;
+      white-space: nowrap; margin-bottom: .2rem; cursor: pointer;
+    }
+    .podium-name:hover { text-decoration: underline; }
+    .rank-1 .podium-name { font-size: .95rem; }
+
+    .podium-elo {
+      font-family: 'Space Mono', monospace; font-size: .75rem;
+      font-weight: 700; margin-bottom: .65rem;
+    }
+    .rank-1 .podium-elo { color: var(--gold); font-size: .85rem; }
+    .rank-2 .podium-elo { color: var(--silver); }
+    .rank-3 .podium-elo { color: var(--bronze); }
+
+    .podium-platform {
+      width: 100%; border-radius: 10px 10px 0 0;
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-size: 1.3rem;
+      font-weight: 700; padding-top: .75rem;
+    }
+    .rank-1 .podium-platform {
+      height: 100px;
+      background: linear-gradient(180deg, rgba(240,192,64,.22) 0%, rgba(240,192,64,.06) 100%);
+      border: 1px solid rgba(240,192,64,.38); border-bottom: none; color: var(--gold);
+      box-shadow: inset 0 1px 0 rgba(240,192,64,.45), 0 -6px 28px rgba(240,192,64,.12);
+    }
+    .rank-2 .podium-platform {
+      height: 72px;
+      background: linear-gradient(180deg, rgba(192,207,232,.13) 0%, rgba(192,207,232,.03) 100%);
+      border: 1px solid rgba(192,207,232,.22); border-bottom: none; color: var(--silver);
+    }
+    .rank-3 .podium-platform {
+      height: 54px;
+      background: linear-gradient(180deg, rgba(205,124,74,.13) 0%, rgba(205,124,74,.03) 100%);
+      border: 1px solid rgba(205,124,74,.22); border-bottom: none; color: var(--bronze);
+    }
+
+    /* ─── LEADERBOARD ROWS ──────────────────────── */
+    .lb-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: .75rem 1rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: .45rem;
+      cursor: pointer; transition: all .18s;
+      animation: cardIn .3s cubic-bezier(.16,1,.3,1) both;
+    }
+    .lb-row:hover { border-color: rgba(240,192,64,.22); transform: translateY(-1px); }
+    .lb-row.is-me { background: rgba(240,192,64,.06); border-color: rgba(240,192,64,.2); }
+    .lb-row.is-me:hover { background: rgba(240,192,64,.1); }
+    .lb-updated { animation: flashGreen .6s ease-out; }
+    @keyframes flashGreen { 0%{background:rgba(46,213,115,.06);} 100%{background:transparent;} }
+
+    .lb-rank {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: .9rem; width: 30px; text-align: center; flex-shrink: 0; color: var(--muted);
+    }
+    .lb-rank.gold   { color: var(--gold); }
+    .lb-rank.silver { color: var(--silver); }
+    .lb-rank.bronze { color: var(--bronze); }
+
+    .lb-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg, #1a2540, #0c1220);
+      border: 1px solid rgba(240,192,64,.18);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: .85rem; color: var(--gold); flex-shrink: 0;
+    }
+    .lb-info { flex: 1; min-width: 0; }
+    .lb-name { font-size: .87rem; font-weight: 600; display: flex; align-items: center; gap: 5px; }
+    .lb-sub  { font-size: .72rem; color: var(--muted); margin-top: 1px; }
+
+    .lb-elo {
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: .88rem; white-space: nowrap;
+    }
+    .lb-elo.gold   { color: var(--gold); }
+    .lb-elo.silver { color: var(--silver); }
+    .lb-elo.bronze { color: var(--bronze); }
+
+    .lb-me-badge {
+      font-size: .58rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: .06em; padding: 2px 6px; border-radius: 99px;
+      background: var(--gold-dim); color: var(--gold);
+      border: 1px solid rgba(240,192,64,.28);
+    }
+
+    .pos-change { font-size: .68rem; font-weight: 700; margin-left: 4px; }
+    .pos-change.up   { color: var(--success); }
+    .pos-change.down { color: var(--error); }
+
+    /* ─── WIN RATE BAR ──────────────────────────── */
+    .wr-wrap { display: none; align-items: center; gap: 7px; min-width: 70px; }
+    .wr-bg   { flex: 1; height: 3px; background: rgba(255,255,255,.06); border-radius: 99px; overflow: hidden; }
+    .wr-fill { height: 100%; border-radius: 99px; background: linear-gradient(90deg, var(--success), #059669); }
+    .wr-lbl  { font-size: .7rem; font-weight: 700; color: var(--muted); min-width: 28px; text-align: right; }
+
+    /* ─── SEARCH RESULTS ────────────────────────── */
+    .sr-card {
+      display: flex; align-items: center; gap: 12px;
+      padding: .75rem 1rem;
+      background: var(--card); border: 1px solid var(--border);
+      border-radius: var(--radius); margin-bottom: .45rem;
+      cursor: pointer; transition: all .18s;
+      animation: cardIn .3s cubic-bezier(.16,1,.3,1) both;
+    }
+    .sr-card:hover { border-color: rgba(240,192,64,.25); transform: translateY(-1px); }
+    .sr-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: linear-gradient(135deg,#1a2540,#0c1220);
+      border: 1px solid rgba(240,192,64,.18);
+      display: flex; align-items: center; justify-content: center;
+      font-family: 'Space Mono', monospace; font-weight: 700;
+      font-size: .9rem; color: var(--gold); flex-shrink: 0;
+    }
+    .sr-info { flex: 1; min-width: 0; }
+    .sr-name   { font-size: .88rem; font-weight: 600; }
+    .sr-handle { font-size: .72rem; color: var(--muted); }
+    .sr-elo    { font-size: .7rem;  color: var(--muted); margin-top: 2px; }
+    .sr-elo span { color: var(--gold); font-weight: 600; }
+
+    /* ─── SKELETON ──────────────────────────────── */
+    .sk-card { background: var(--card); border: 1px solid var(--border); border-radius: var(--radius); margin-bottom: .45rem; padding: 1rem; }
+    .sk {
+      background: linear-gradient(90deg,rgba(255,255,255,.04) 25%,rgba(255,255,255,.08) 50%,rgba(255,255,255,.04) 75%);
+      background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 5px;
+    }
+    @keyframes shimmer { to { background-position: -200% 0; } }
+
+    /* ─── EMPTY ─────────────────────────────────── */
+    .feed-empty { text-align: center; padding: 3.5rem 1rem; color: var(--muted); }
+    .feed-empty-icon { font-size: 2.5rem; margin-bottom: .75rem; opacity: .5; }
+    .feed-empty h3 { font-size: 1rem; font-weight: 700; color: var(--fg); margin-bottom: .3rem; }
+    .feed-empty p  { font-size: .83rem; }
+
+    /* ─── ANIMATIONS ────────────────────────────── */
+    @keyframes fadeUp  { from{opacity:0;transform:translateY(16px);} to{opacity:1;transform:none;} }
+    @keyframes cardIn  { from{opacity:0;transform:translateY(12px);} to{opacity:1;transform:none;} }
+
+    /* ─── RESPONSIVE ────────────────────────────── */
+    @media (max-width: 480px) {
+      .wr-wrap { display: none; }
+      .podium-name { max-width: 72px; font-size: .78rem; }
+    }
+  </style>
+</head>
+<body>
+<div class="app-shell">
+  <div class="center-wrapper">
+    <div class="main-content">
+
+      <!-- Page header -->
+      <div class="lb-page-header">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+          <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>
+        </svg>
+        Leaderboard
+        <span class="live-badge" id="liveBadge" style="display:none;">
+          <span class="live-dot"></span>Live
+        </span>
+      </div>
+
+      <!-- Search -->
+      <div class="search-wrap">
+        <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input class="search-input" id="searchInput" type="text"
+               placeholder="Search players…"
+               oninput="debouncedSearch(this.value)"
+               autocomplete="off"/>
+      </div>
+
+      <!-- Top section: podium + full list -->
+      <div id="topWrapper">
+        <!-- Podium -->
+        <div class="podium-wrapper" id="podiumWrapper" style="display:none;"></div>
+
+        <div class="section-label">🏆 Top Players</div>
+        <div id="lbList"></div>
+      </div>
+
+      <!-- Search results -->
+      <div id="searchWrapper" style="display:none;">
+        <div class="section-label">🔍 Search Results</div>
+        <div id="searchList"></div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════
+   HELPERS
+══════════════════════════════════════════ */
+function displayName(u) { return u.displayName || u.name || u.username || '?'; }
+
+function skels(n) {
+  return Array.from({ length: n }, function () {
+    return '<div class="sk-card"><div style="display:flex;align-items:center;gap:12px;">' +
+      '<div class="sk" style="width:38px;height:38px;border-radius:50%;flex-shrink:0;"></div>' +
+      '<div style="flex:1;"><div class="sk" style="width:130px;height:12px;margin-bottom:6px;"></div>' +
+      '<div class="sk" style="width:80px;height:10px;"></div></div>' +
+      '<div class="sk" style="width:64px;height:16px;border-radius:6px;"></div>' +
+      '</div></div>';
+  }).join('');
+}
+
+function rankClass(i) { return i === 0 ? 'gold' : i === 1 ? 'silver' : i === 2 ? 'bronze' : ''; }
+function medalEmoji(i) { return ['🥇','🥈','🥉'][i] || ''; }
+
+function eloColor(i) {
+  if (i === 0) return 'color:var(--gold)';
+  if (i === 1) return 'color:var(--silver)';
+  if (i === 2) return 'color:var(--bronze)';
+  return '';
+}
+
+function avatarStyle(i) {
+  if (i === 0) return 'background:radial-gradient(circle at 35% 35%,#fde68a,var(--gold));border-color:var(--gold);color:#04060d;';
+  if (i === 1) return 'background:radial-gradient(circle at 35% 35%,#e2e8f8,#9aaacf);border-color:var(--silver);color:#0e1528;';
+  if (i === 2) return 'background:radial-gradient(circle at 35% 35%,#f5ba8a,var(--bronze));border-color:var(--bronze);color:#04060d;';
+  return '';
+}
+
+/* ══════════════════════════════════════════
+   STATE
+══════════════════════════════════════════ */
+var allUsersCache   = null;
+var lbLoaded        = false;
+var lbPollTimer     = null;
+var lbPrevPositions = {};
+var lbPrevHash      = '';
+
+function lbHash(users) {
+  return users.map(function (u) {
+    return (u._id || displayName(u)) + ':' + Shell.userElo(u);
+  }).join('|');
+}
+
+/* ══════════════════════════════════════════
+   PODIUM
+══════════════════════════════════════════ */
+function renderPodium(users) {
+  var wrap = document.getElementById('podiumWrapper');
+  if (users.length < 3) { wrap.style.display = 'none'; return; }
+  wrap.style.display = 'flex';
+
+  // layout order: 2nd | 1st | 3rd
+  var layout = [
+    { u: users[1], r: 2 },
+    { u: users[0], r: 1 },
+    { u: users[2], r: 3 },
+  ];
+
+  wrap.innerHTML = layout.map(function (item) {
+    var u    = item.u;
+    var r    = item.r;
+    var idx  = r - 1;
+    var name = displayName(u);
+    var elo  = Shell.userElo(u);
+    return (
+      '<div class="podium-slot rank-' + r + '">' +
+        '<div class="podium-avatar" style="' + avatarStyle(idx) + '" onclick="goToProfile(' + JSON.stringify(u) + ')">' +
+          Shell.esc(name[0].toUpperCase()) +
+        '</div>' +
+        '<div class="podium-name" onclick="goToProfile(' + JSON.stringify(u) + ')">' + Shell.esc(name) + '</div>' +
+        '<div class="podium-elo">' + elo + ' Elo</div>' +
+        '<div class="podium-platform">' + r + '</div>' +
+      '</div>'
+    );
+  }).join('');
+}
+
+/* ══════════════════════════════════════════
+   LEADERBOARD LIST
+══════════════════════════════════════════ */
+function renderLeaderboard(users, isUpdate) {
+  var el  = document.getElementById('lbList');
+  var me  = Shell.currentUser ? (Shell.currentUser._id || displayName(Shell.currentUser)) : null;
+  var newPositions = {};
+  users.forEach(function (u, i) { newPositions[u._id || displayName(u)] = i; });
+
+  el.innerHTML = '';
+  users.forEach(function (u, i) {
+    var elo     = Shell.userElo(u);
+    var name    = displayName(u);
+    var country = (u.country || '').toUpperCase();
+    var key     = u._id || name;
+    var isMe    = me && (u._id === me || displayName(u) === me);
+    var prevPos = lbPrevPositions[key];
+    var delta   = (isUpdate && prevPos !== undefined) ? prevPos - i : 0;
+
+    var changeHTML = '';
+    if (delta > 0)      changeHTML = '<span class="pos-change up">▲'   + delta           + '</span>';
+    else if (delta < 0) changeHTML = '<span class="pos-change down">▼' + Math.abs(delta) + '</span>';
+
+    var wins  = u.wins  || 0;
+    var games = u.games || u.gamesPlayed || 0;
+    var wr    = games ? Math.round((wins / games) * 100) : 0;
+
+    var row = document.createElement('div');
+    row.className = 'lb-row' + (isMe ? ' is-me' : '') + (isUpdate ? ' lb-updated' : '');
+    row.style.animationDelay = (i * 0.04) + 's';
+    row.onclick = function () { goToProfile(u); };
+
+    row.innerHTML =
+      '<div class="lb-rank ' + rankClass(i) + '">' + (medalEmoji(i) || (i + 1)) + '</div>' +
+      '<div class="lb-avatar" style="' + avatarStyle(i) + '">' + Shell.esc(name[0].toUpperCase()) + '</div>' +
+      '<div class="lb-info">' +
+        '<div class="lb-name">' + Shell.esc(name) + ' ' + (Shell.CMAP[country] || '') +
+          (isMe ? ' <span class="lb-me-badge">You</span>' : '') + changeHTML + '</div>' +
+        '<div class="lb-sub">@' + Shell.esc((u.username || name).toLowerCase().replace(/\s+/g, '_')) + '</div>' +
+      '</div>' +
+      '<div class="wr-wrap">' +
+        '<div class="wr-bg"><div class="wr-fill" style="width:' + wr + '%"></div></div>' +
+        '<span class="wr-lbl">' + wr + '%</span>' +
+      '</div>' +
+      '<div class="lb-elo ' + rankClass(i) + '" style="' + eloColor(i) + '">' + elo + ' Elo</div>';
+
+    el.appendChild(row);
+  });
+
+  lbPrevPositions = newPositions;
+}
+
+/* ══════════════════════════════════════════
+   FETCH + POLL
+══════════════════════════════════════════ */
+async function loadLeaderboard() {
+  if (lbLoaded) return;
+  document.getElementById('lbList').innerHTML = skels(6);
+  try {
+    var r = await fetch('/api/leaderboard', { credentials: 'same-origin' });
+    var d = await r.json();
+    if (!d.success) throw new Error('API error');
+    lbLoaded        = true;
+    allUsersCache   = d.users;
+    lbPrevHash      = lbHash(d.users.slice(0, 100));
+    renderPodium(d.users.slice(0, 3));
+    renderLeaderboard(d.users.slice(0, 100), false);
+    startLivePoll();
+  } catch (e) {
+    document.getElementById('lbList').innerHTML =
+      '<div class="feed-empty">' +
+        '<div class="feed-empty-icon">⚠️</div>' +
+        '<h3>Failed to load</h3>' +
+        '<p>Please refresh and try again.</p>' +
+      '</div>';
+  }
+}
+
+function startLivePoll() {
+  if (lbPollTimer) return;
+  document.getElementById('liveBadge').style.display = 'inline-flex';
+  lbPollTimer = setInterval(pollLeaderboard, 12000);
+}
+
+async function pollLeaderboard() {
+  try {
+    var r = await fetch('/api/leaderboard', { credentials: 'same-origin' });
+    var d = await r.json();
+    if (!d.success) return;
+    var top10   = d.users.slice(0, 100);
+    var newHash = lbHash(top10);
+    if (newHash === lbPrevHash) return;   // nothing changed
+    lbPrevHash    = newHash;
+    allUsersCache = d.users;
+    renderPodium(top10.slice(0, 3));
+    renderLeaderboard(top10, true);
+  } catch (e) { console.error('[leaderboard] poll error:', e); }
+}
+
+/* ══════════════════════════════════════════
+   SEARCH
+══════════════════════════════════════════ */
+var searchTimer = null;
+function debouncedSearch(val) {
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function () { doSearch(val); }, 250);
+}
+
+function doSearch(q) {
+  var topWrap    = document.getElementById('topWrapper');
+  var srWrap     = document.getElementById('searchWrapper');
+  var srList     = document.getElementById('searchList');
+
+  if (!q.trim()) {
+    topWrap.style.display = 'block';
+    srWrap.style.display  = 'none';
+    return;
+  }
+
+  if (!allUsersCache) {
+    loadLeaderboard().then(function () { doSearch(q); });
+    return;
+  }
+
+  var q2 = q.toLowerCase();
+  var filtered = allUsersCache.filter(function (u) {
+    var n = displayName(u).toLowerCase();
+    var h = (u.username || '').toLowerCase();
+    return n.includes(q2) || h.includes(q2);
+  });
+
+  topWrap.style.display = 'none';
+  srWrap.style.display  = 'block';
+  srList.innerHTML = '';
+
+  if (!filtered.length) {
+    srList.innerHTML =
+      '<div class="feed-empty">' +
+        '<div class="feed-empty-icon">🔭</div>' +
+        '<h3>No players found</h3>' +
+      '</div>';
+    return;
+  }
+
+  filtered.forEach(function (u, i) {
+    var name    = displayName(u);
+    var elo     = Shell.userElo(u);
+    var country = (u.country || '').toUpperCase();
+    var card    = document.createElement('div');
+    card.className = 'sr-card';
+    card.style.animationDelay = (i * 0.03) + 's';
+    card.onclick = function () { goToProfile(u); };
+    card.innerHTML =
+      '<div class="sr-avatar">' + Shell.esc(name[0].toUpperCase()) + '</div>' +
+      '<div class="sr-info">' +
+        '<div class="sr-name">' + Shell.esc(name) + ' ' + (Shell.CMAP[country] || '') + '</div>' +
+        '<div class="sr-handle">@' + Shell.esc((u.username || name).toLowerCase().replace(/\s+/g,'_')) + '</div>' +
+        '<div class="sr-elo"><span>' + elo + '</span> Elo</div>' +
+      '</div>' +
+      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" ' +
+           'stroke-linecap="round" stroke-linejoin="round" width="14" height="14" ' +
+           'style="color:var(--muted);flex-shrink:0;">' +
+        '<polyline points="9 18 15 12 9 6"/>' +
+      '</svg>';
+    srList.appendChild(card);
+  });
+}
+
+/* ══════════════════════════════════════════
+   NAVIGATE TO PROFILE  (mirrors old helper)
+══════════════════════════════════════════ */
+function goToProfile(u) {
+  if (!u) return;
+  if (u._id)           window.location.href = '/profile?id='   + encodeURIComponent(u._id);
+  else if (u.username) window.location.href = '/profile?name=' + encodeURIComponent(u.username.toLowerCase());
+  else if (u.name)     window.location.href = '/profile?name=' + encodeURIComponent(u.name.toLowerCase());
+}
+
+/* ══════════════════════════════════════════
+   BOOT
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', function () {
+  Shell.init({ active: 'leaderboard' });
+  loadLeaderboard();
+});
+</script>
+</body>
+</html>

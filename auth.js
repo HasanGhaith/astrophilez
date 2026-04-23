@@ -10,8 +10,8 @@ const express   = require('express');
 // ─────────────────────────────────────────────
 // Constants
 // ─────────────────────────────────────────────
-const ACCESS_MAX_AGE  = 15 * 60 * 1000;           // 15 min
-const REFRESH_MAX_AGE = 7 * 24 * 60 * 60 * 1000;  // 7 days
+const ACCESS_MAX_AGE  = 60 * 60 * 1000;            // 1 hour
+const REFRESH_MAX_AGE = 30 * 24 * 60 * 60 * 1000; // 30 days
 const BCRYPT_ROUNDS   = 12;
 
 // ─────────────────────────────────────────────
@@ -46,7 +46,7 @@ function issueAccessToken(user) {
       country:     user.country     ?? null,
     },
     process.env.JWT_ACCESS_SECRET,
-    { expiresIn: '15m' }
+   { expiresIn: '1h' }
   );
 }
 
@@ -158,6 +158,7 @@ function createAuthRouter(usersCollection) {
         total_solves:   0,                // correct answers submitted as solver
         total_attempts: 0,                // total answer submissions (right + wrong)
         current_streak: 0,                // consecutive correct solves
+        arena_seen: [],   // problem IDs seen in Math Arena
 
         // ── Social ──────────────────────────────────────────────
         followers:      [],               // array of user ObjectIds

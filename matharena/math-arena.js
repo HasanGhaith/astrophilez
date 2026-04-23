@@ -2,68 +2,39 @@
 // Handles blitz / survival / daily modes from the local problem bank.
 // All Elo is stored in `solver_rating` — the single source of truth shared
 // with the Explore feed (challenges/challenges.js in the main router).
-//
-// Design goals
-// ────────────────────────────────────────────────────────────────────────────
-// 1. Arena gives LESS Elo than Explore to keep the Explore feed the main
-//    path for rating growth.
-// 2. The higher your rating, the harder it is to gain more — the expected-
-//    score curve naturally compresses gains at the top, and K shrinks.
-// 3. Gains are asymmetric: winning against a problem rated far below you
-//    gives almost nothing; losing to one costs more than you'd expect.
-//    This punishes "easy farming" without being unfair at the top.
 
-const express  = require("express");
-const router   = express.Router();
-const path     = require("path");
-const fs       = require("fs");
+const express      = require("express");
+const router       = express.Router();
+const path         = require("path");
+const fs           = require("fs");
 const { ObjectId } = require("mongodb");
 
 // ─── Problem bank ─────────────────────────────────────────────────────────────
 const PROBLEMS = JSON.parse(
-  fs.readFileSync(path.join(__dirname, "problem-bank.json"), "utf-8")
+  fs.readFileSync(path.join(__dirname, "/matharena-engine/problem-bank.json"), "utf-8")
 );
-const PROBLEMS_BY_ID = Object.fromEntries(PROBLEMS.map(p => [p.id, p]));
+
+// Support id, _id, or problemId field names in the JSON
+const PROBLEMS_BY_ID = Object.fromEntries(
+  PROBLEMS.map(p => [p.id ?? p._id ?? p.problemId, p])
+);
 
 // ─── Rating baseline ──────────────────────────────────────────────────────────
-// All users start at 800 (set in server.js / the main challenges router).
-// These are the "virtual Elo" of each difficulty tier in the problem bank.
-// Deliberately wide spread so hard problems reward proportionally more.
 const BASE_RATING = 800;
 
 const DIFFICULTY_RATING = {
-  easy:       900,   // slightly above floor — easy wins give very little
+  easy:       900,
   medium:     1050,
   hard:       1300,
   impossible: 1700,
 };
 
-// ─── K-factor: base × difficulty multiplier × mode multiplier ─────────────────
-//
-// Base K shrinks as your rating rises (compress gains at top end):
-//   rating < 1000  → K = 20
-//   1000–1300      → K = 16
-//   1300–1600      → K = 12
-//   1600+          → K =  8
-//
-// Difficulty multiplier — harder problems can move the needle more:
-//   easy: 0.6  medium: 1.0  hard: 1.6  impossible: 2.4
-//
-// Arena mode multiplier (ALL modes are capped below Explore):
-//   classic:  0.55  ← main arena mode
-//   blitz:    0.18  ← many answers per minute → heavy cap to prevent inflation
-//   survival: 0.35  ← moderate
-//   daily:    0.30  ← per-question; bonus applied separately at session-end
-
 const DIFF_K_MULT = { easy: 0.6, medium: 1.0, hard: 1.6, impossible: 2.4 };
 const MODE_MULT   = { classic: 0.55, blitz: 0.18, survival: 0.35, daily: 0.30 };
 
-// Daily completion bonus — flat Elo added at session end, scaled by score.
-// Max = 12 (5/5 correct). Much lower than the old 50 to prevent daily farming.
 const DAILY_COMPLETION_BONUS = 12;
 const DAILY_COUNT            = 5;
 
-// Rolling history caps
 const MAX_ELO_HISTORY    = 200;
 const MAX_RECENT_MATCHES = 100;
 
@@ -76,9 +47,6 @@ function baseK(rating) {
 }
 
 // ─── ELO delta calculation ────────────────────────────────────────────────────
-// Returns the signed integer change to apply to solver_rating.
-// Asymmetry factor: losses cost 1.4× what the symmetric formula would give,
-// so players cannot sustainably farm easy problems for net positive Elo.
 function calcEloDelta({ solverRating, oppRating, correct, difficulty, mode }) {
   const expected  = 1 / (1 + Math.pow(10, (oppRating - solverRating) / 400));
   const scored    = correct ? 1 : 0;
@@ -87,10 +55,7 @@ function calcEloDelta({ solverRating, oppRating, correct, difficulty, mode }) {
                   * (MODE_MULT[mode]         ?? 0.35);
 
   let delta = k * (scored - expected);
-
-  // Apply asymmetry on losses only
   if (!correct) delta *= 1.4;
-
   return Math.round(delta);
 }
 
@@ -164,8 +129,7 @@ router.get("/", requireAuth, (req, res) => {
   res.sendFile(path.join(__dirname, "../public/challenges.html"));
 });
 
-// GET /challenges/problems
-// Returns unseen problems for this user. Falls back to full list if all seen.
+// GET /matharena/problems
 router.get("/problems", requireAuth, async (req, res) => {
   try {
     const usersCol = req.app.locals.usersCollection;
@@ -174,31 +138,47 @@ router.get("/problems", requireAuth, async (req, res) => {
       { projection: { seenProblemIds: 1 } }
     );
     const seen   = new Set(user?.seenProblemIds ?? []);
-    const unseen = PROBLEMS.filter(p => !seen.has(p.id));
+    const unseen = PROBLEMS.filter(p => !seen.has(p.id ?? p._id ?? p.problemId));
     res.json(unseen.length > 0 ? unseen : PROBLEMS);
   } catch (err) {
-    console.error("GET /challenges/problems:", err);
+    console.error("GET /matharena/problems:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// GET /challenges/elo
-// Returns the user's current solver_rating (unified field).
-router.get("/elo", requireAuth, async (req, res) => {
+// GET /matharena/elo
+// Returns ELO for authenticated users; returns guest:true for unauthenticated
+// Does NOT redirect — always returns JSON so the frontend can detect auth state.
+router.get("/elo", async (req, res) => {
   try {
+    const jwt   = require("jsonwebtoken");
+    const token = req.cookies?.accessToken;
+
+    if (!token) {
+      return res.json({ success: true, elo: BASE_RATING, guest: true });
+    }
+
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_ACCESS_SECRET);
+    } catch {
+      // Expired or invalid token → treat as guest
+      return res.json({ success: true, elo: BASE_RATING, guest: true });
+    }
+
     const usersCol = req.app.locals.usersCollection;
     const user = await usersCol.findOne(
-      { _id: new ObjectId(req.user.userId) },
+      { _id: new ObjectId(decoded.userId) },
       { projection: { solver_rating: 1 } }
     );
-    res.json({ success: true, elo: user?.solver_rating ?? BASE_RATING });
+    res.json({ success: true, elo: user?.solver_rating ?? BASE_RATING, guest: false });
   } catch (err) {
-    console.error("GET /challenges/elo:", err);
+    console.error("GET /matharena/elo:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// GET /challenges/stats
+// GET /matharena/stats
 router.get("/stats", requireAuth, async (req, res) => {
   try {
     const usersCol = req.app.locals.usersCollection;
@@ -209,12 +189,17 @@ router.get("/stats", requireAuth, async (req, res) => {
     const stats = mergeWithDefaults(user?.stats ?? {}, buildDefaultStats());
     res.json({ success: true, elo: user?.solver_rating ?? BASE_RATING, stats });
   } catch (err) {
-    console.error("GET /challenges/stats:", err);
+    console.error("GET /matharena/stats:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// GET /challenges/daily-status
+// GET /matharena/problems-bank
+router.get("/problems-bank", (req, res) => {
+  res.json(PROBLEMS);
+});
+
+// GET /matharena/daily-status
 router.get("/daily-status", requireAuth, async (req, res) => {
   try {
     const usersCol = req.app.locals.usersCollection;
@@ -236,19 +221,21 @@ router.get("/daily-status", requireAuth, async (req, res) => {
       bestScore:      daily.bestScore        ?? 0,
     });
   } catch (err) {
-    console.error("GET /challenges/daily-status:", err);
+    console.error("GET /matharena/daily-status:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// POST /challenges/submit
-// Records one answer and updates solver_rating.
+// POST /matharena/submit
+// Records one answer, updates solver_rating, marks problem as seen.
 // body: { problemId, correct, mode }
 router.post("/submit", requireAuth, async (req, res) => {
   try {
     const { problemId, correct, mode = "classic" } = req.body;
-    if (typeof problemId === "undefined" || typeof correct === "undefined") {
-      return res.status(400).json({ success: false, message: "problemId and correct required" });
+
+    // `correct` is required; `problemId` is optional (falls back to medium difficulty)
+    if (typeof correct === "undefined" || correct === null) {
+      return res.status(400).json({ success: false, message: "correct is required" });
     }
 
     const usersCol = req.app.locals.usersCollection;
@@ -260,54 +247,38 @@ router.post("/submit", requireAuth, async (req, res) => {
     const currentRating = user?.solver_rating ?? BASE_RATING;
     const prevStats     = mergeWithDefaults(user?.stats ?? {}, buildDefaultStats());
 
-    // Block if daily already completed today
     if (mode === "daily" && prevStats.daily.lastCompleted === todayStr()) {
       return res.json({
-        success:    false,
-        blocked:    true,
-        message:    "Daily already completed today",
-        eloBefore:  currentRating,
-        eloAfter:   currentRating,
-        eloDelta:   0,
+        success:   false,
+        blocked:   true,
+        message:   "Daily already completed today",
+        eloBefore: currentRating,
+        eloAfter:  currentRating,
+        eloDelta:  0,
       });
     }
 
-    const prob       = PROBLEMS_BY_ID[Number(problemId)];
+    // Resolve problem — support numeric id, string id, or undefined
+    const resolvedId = problemId != null ? Number(problemId) : null;
+    const prob       = resolvedId != null ? PROBLEMS_BY_ID[resolvedId] : null;
     const difficulty = prob?.difficulty ?? "medium";
     const topic      = prob?.topic      ?? "Unknown";
     const oppRating  = DIFFICULTY_RATING[difficulty] ?? DIFFICULTY_RATING.medium;
 
     const eloDelta  = calcEloDelta({ solverRating: currentRating, oppRating, correct: !!correct, difficulty, mode });
-    const newRating = Math.max(BASE_RATING, currentRating + eloDelta); // floor at 800
+    const newRating = Math.max(BASE_RATING, currentRating + eloDelta);
 
     const diffKey = ["easy","medium","hard","impossible"].includes(difficulty) ? difficulty : "medium";
     const modeKey = ["classic","blitz","survival","daily"].includes(mode)      ? mode       : "classic";
 
     const newEloHistory = [
       ...prevStats.eloHistory,
-      {
-        elo:        newRating,
-        mode,
-        difficulty,
-        topic,
-        correct:    !!correct,
-        delta:      eloDelta,
-        ts:         Date.now(),
-      },
+      { elo: newRating, mode, difficulty, topic, correct: !!correct, delta: eloDelta, ts: Date.now() },
     ].slice(-MAX_ELO_HISTORY);
 
     const newRecentMatches = [
       ...prevStats.recentMatches,
-      {
-        difficulty,
-        topic,
-        mode,
-        correct:   !!correct,
-        delta:     eloDelta,
-        eloBefore: currentRating,
-        eloAfter:  newRating,
-        ts:        Date.now(),
-      },
+      { difficulty, topic, mode, correct: !!correct, delta: eloDelta, eloBefore: currentRating, eloAfter: newRating, ts: Date.now() },
     ].slice(-MAX_RECENT_MATCHES);
 
     const prevTopic  = prevStats.byTopic[topic] ?? { attempted: 0, correct: 0 };
@@ -315,49 +286,53 @@ router.post("/submit", requireAuth, async (req, res) => {
       ...prevStats.byTopic,
       [topic]: {
         attempted: prevTopic.attempted + 1,
-        correct:   prevTopic.correct   + (correct ? 1 : 0),
+        correct:   prevTopic.correct + (correct ? 1 : 0),
       },
     };
 
+    const updateOps = {
+      $set: {
+        solver_rating:                                    newRating,
+        [`stats.byDifficulty.${diffKey}.attempted`]:     prevStats.byDifficulty[diffKey].attempted + 1,
+        [`stats.byDifficulty.${diffKey}.correct`]:       prevStats.byDifficulty[diffKey].correct   + (correct ? 1 : 0),
+        [`stats.byMode.${modeKey}.attempted`]:            prevStats.byMode[modeKey].attempted + 1,
+        [`stats.byMode.${modeKey}.correct`]:              prevStats.byMode[modeKey].correct   + (correct ? 1 : 0),
+        "stats.totals.attempted":                         prevStats.totals.attempted + 1,
+        "stats.totals.correct":                           prevStats.totals.correct   + (correct ? 1 : 0),
+        "stats.eloHistory":                               newEloHistory,
+        "stats.recentMatches":                            newRecentMatches,
+        "stats.byTopic":                                  newByTopic,
+      },
+    };
+
+    // Only add to seen set if we have a valid problem id
+    if (resolvedId != null) {
+      updateOps.$addToSet = { seenProblemIds: resolvedId };
+    }
+
     await usersCol.updateOne(
       { _id: new ObjectId(req.user.userId) },
-      {
-        $set: {
-          solver_rating:                                    newRating,
-          [`stats.byDifficulty.${diffKey}.attempted`]:     prevStats.byDifficulty[diffKey].attempted + 1,
-          [`stats.byDifficulty.${diffKey}.correct`]:       prevStats.byDifficulty[diffKey].correct   + (correct ? 1 : 0),
-          [`stats.byMode.${modeKey}.attempted`]:            prevStats.byMode[modeKey].attempted + 1,
-          [`stats.byMode.${modeKey}.correct`]:              prevStats.byMode[modeKey].correct   + (correct ? 1 : 0),
-          "stats.totals.attempted":                         prevStats.totals.attempted + 1,
-          "stats.totals.correct":                           prevStats.totals.correct   + (correct ? 1 : 0),
-          "stats.eloHistory":                               newEloHistory,
-          "stats.recentMatches":                            newRecentMatches,
-          "stats.byTopic":                                  newByTopic,
-        },
-        $addToSet: { seenProblemIds: Number(problemId) },
-      }
+      updateOps
     );
 
     res.json({
-      success:    true,
-      problemId,
-      correct:    !!correct,
+      success:   true,
+      problemId: resolvedId,
+      correct:   !!correct,
       mode,
       topic,
       difficulty,
-      eloBefore:  currentRating,
-      eloAfter:   newRating,
+      eloBefore: currentRating,
+      eloAfter:  newRating,
       eloDelta,
     });
   } catch (err) {
-    console.error("POST /challenges/submit:", err);
+    console.error("POST /matharena/submit:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
 
-// POST /challenges/session-end
-// Called when a blitz / survival / daily session finishes.
-// body: { mode, correct, attempted, bestStreak, dailyScore }
+// POST /matharena/session-end
 router.post("/session-end", requireAuth, async (req, res) => {
   try {
     const { mode, correct = 0, attempted = 0, bestStreak = 0, dailyScore = 0 } = req.body;
@@ -380,8 +355,8 @@ router.post("/session-end", requireAuth, async (req, res) => {
     if (mode === "blitz") {
       const prev = prevStats.byMode.blitz;
       $set["stats.byMode.blitz.gamesPlayed"] = prev.gamesPlayed + 1;
-      $set["stats.byMode.blitz.bestScore"]   = Math.max(prev.bestScore,         correct);
-      $set["stats.byMode.blitz.bestStreak"]  = Math.max(prev.bestStreak ?? 0,   bestStreak);
+      $set["stats.byMode.blitz.bestScore"]   = Math.max(prev.bestScore,       correct);
+      $set["stats.byMode.blitz.bestStreak"]  = Math.max(prev.bestStreak ?? 0, bestStreak);
       $set["stats.byMode.blitz.totalTime"]   = (prev.totalTime ?? 0) + 60;
     }
 
@@ -401,8 +376,6 @@ router.post("/session-end", requireAuth, async (req, res) => {
       const today     = todayStr();
       const newStreak = prev.lastCompleted === yesterdayStr() ? prev.streak + 1 : 1;
 
-      // Bonus scaled by score (0–5 correct out of 5 → 0–12 Elo)
-      // Shrinks further if already high-rated (same baseK compression)
       const ratingMult = currentRating < 1000 ? 1.0
                        : currentRating < 1300 ? 0.8
                        : currentRating < 1600 ? 0.6
@@ -410,12 +383,7 @@ router.post("/session-end", requireAuth, async (req, res) => {
       eloBonus = Math.round(DAILY_COMPLETION_BONUS * (dailyScore / DAILY_COUNT) * ratingMult);
       const newRating = Math.max(BASE_RATING, currentRating + eloBonus);
 
-      const bonusEntry = {
-        elo:   newRating,
-        mode:  "daily_bonus",
-        delta: eloBonus,
-        ts:    Date.now(),
-      };
+      const bonusEntry = { elo: newRating, mode: "daily_bonus", delta: eloBonus, ts: Date.now() };
       const newEloHistory = [...prevStats.eloHistory, bonusEntry].slice(-MAX_ELO_HISTORY);
 
       $set["solver_rating"]                      = newRating;
@@ -435,7 +403,57 @@ router.post("/session-end", requireAuth, async (req, res) => {
 
     res.json({ success: true, mode, eloBonus, newRating: currentRating + eloBonus });
   } catch (err) {
-    console.error("POST /challenges/session-end:", err);
+    console.error("POST /matharena/session-end:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// GET /matharena/seen
+router.get("/seen", requireAuth, async (req, res) => {
+  try {
+    const usersCol = req.app.locals.usersCollection;
+    const user = await usersCol.findOne(
+      { _id: new ObjectId(req.user.userId) },
+      { projection: { seenProblemIds: 1 } }
+    );
+    if (!user) return res.status(404).json({ success: false, message: "User not found" });
+    res.json({ success: true, seen: user.seenProblemIds ?? [] });
+  } catch (err) {
+    console.error("GET /matharena/seen:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// POST /matharena/seen
+router.post("/seen", requireAuth, async (req, res) => {
+  const { id } = req.body;
+  if (id === undefined || id === null)
+    return res.status(400).json({ success: false, message: "Problem id required" });
+
+  try {
+    const usersCol = req.app.locals.usersCollection;
+    await usersCol.updateOne(
+      { _id: new ObjectId(req.user.userId) },
+      { $addToSet: { seenProblemIds: Number(id) } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("POST /matharena/seen:", err);
+    res.status(500).json({ success: false, message: "Server error" });
+  }
+});
+
+// DELETE /matharena/seen
+router.delete("/seen", requireAuth, async (req, res) => {
+  try {
+    const usersCol = req.app.locals.usersCollection;
+    await usersCol.updateOne(
+      { _id: new ObjectId(req.user.userId) },
+      { $set: { seenProblemIds: [] } }
+    );
+    res.json({ success: true });
+  } catch (err) {
+    console.error("DELETE /matharena/seen:", err);
     res.status(500).json({ success: false, message: "Server error" });
   }
 });
