@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Battle Arena — Astrophiles</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0a0b14;
+      color: #e0e0e0;
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    header {
+      max-width: 900px;
+      margin: 0 auto 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    header h1 { font-size: 1.5rem; }
+
+    #coin-display {
+      background: #1c1f30;
+      border: 1px solid #2e3250;
+      border-radius: 8px;
+      padding: 0.4rem 0.9rem;
+      font-size: 0.95rem;
+      color: #ffd700;
+    }
+
+    .arena-grid {
+      max-width: 900px;
+      margin: 0 auto;
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1.25rem;
+    }
+
+    .arena-card {
+      background: #1c1f30;
+      border: 1px solid #2e3250;
+      border-radius: 12px;
+      padding: 1.5rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+      position: relative;
+    }
+
+    .arena-card.locked {
+      opacity: 0.5;
+    }
+
+    .arena-card .badge-locked {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      font-size: 0.65rem;
+      background: #333;
+      color: #999;
+      padding: 0.2rem 0.5rem;
+      border-radius: 999px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    .arena-card h2 { font-size: 1rem; }
+    .arena-card .fee { font-size: 0.85rem; color: #a0a8d0; }
+    .arena-card .prize { font-size: 0.85rem; color: #ffd700; }
+
+    .arena-card button {
+      margin-top: auto;
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 6px;
+      background: #3b5bdb;
+      color: #fff;
+      font-size: 0.85rem;
+      cursor: pointer;
+    }
+
+    .arena-card button:hover:not(:disabled) { background: #4c6ef5; }
+    .arena-card button:disabled { background: #333; color: #666; cursor: not-allowed; }
+
+    /* Modal */
+    #modal-overlay {
+      display: none;
+      position: fixed; inset: 0;
+      background: rgba(0,0,0,0.7);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    #modal-overlay.open { display: flex; }
+
+    #modal {
+      background: #1c1f30;
+      border: 1px solid #2e3250;
+      border-radius: 14px;
+      padding: 2rem;
+      max-width: 420px;
+      width: 100%;
+      margin: 1rem;
+    }
+
+    #modal h2 { margin-bottom: 1rem; font-size: 1.1rem; }
+
+    #invite-link-box {
+      display: flex;
+      gap: 0.5rem;
+      margin: 1rem 0;
+    }
+
+    #invite-link-input {
+      flex: 1;
+      background: #0f1020;
+      border: 1px solid #2e3250;
+      border-radius: 6px;
+      color: #e0e0e0;
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    #copy-btn {
+      padding: 0.5rem 0.9rem;
+      background: #2e3250;
+      border: none;
+      border-radius: 6px;
+      color: #e0e0e0;
+      cursor: pointer;
+      font-size: 0.8rem;
+      white-space: nowrap;
+    }
+    #copy-btn:hover { background: #3b4080; }
+
+    #modal-msg {
+      font-size: 0.82rem;
+      color: #a0a8d0;
+      margin-bottom: 1rem;
+    }
+
+    #cancel-match-btn {
+      width: 100%;
+      padding: 0.5rem;
+      background: transparent;
+      border: 1px solid #553;
+      border-radius: 6px;
+      color: #f96;
+      cursor: pointer;
+      font-size: 0.82rem;
+      margin-top: 0.5rem;
+    }
+    #cancel-match-btn:hover { background: #2a1a0a; }
+
+    #close-modal-btn {
+      width: 100%;
+      padding: 0.5rem;
+      background: transparent;
+      border: 1px solid #2e3250;
+      border-radius: 6px;
+      color: #a0a8d0;
+      cursor: pointer;
+      font-size: 0.82rem;
+    }
+
+    #error-banner {
+      display: none;
+      max-width: 900px;
+      margin: 0 auto 1rem;
+      background: #2a0a0a;
+      border: 1px solid #5a1a1a;
+      border-radius: 8px;
+      padding: 0.75rem 1rem;
+      color: #f96;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>⚔️ Battle Arenas</h1>
+  <div id="coin-display">🪙 — AstroCoins</div>
+</header>
+
+<div id="error-banner"></div>
+
+<div class="arena-grid" id="arena-grid">
+  <!-- Cards injected by JS -->
+</div>
+
+<!-- Invite Modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title">You're in!</h2>
+    <p id="modal-msg">Share this link to invite your opponent. The match begins when they join.</p>
+    <div id="invite-link-box">
+      <input id="invite-link-input" type="text" readonly />
+      <button id="copy-btn">Copy</button>
+    </div>
+    <button id="cancel-match-btn">Cancel Match & Refund</button>
+    <br><br>
+    <button id="close-modal-btn">Close</button>
+  </div>
+</div>
+
+<script>
+  const ARENAS = [
+    { id: 'lunar',       name: 'Lunar Arena',       fee: 5,   prize: 10,  active: true  },
+    { id: 'orbital',     name: 'Orbital Arena',     fee: 20,  prize: 40,  active: false },
+    { id: 'galactic',    name: 'Galactic Arena',    fee: 50,  prize: 100, active: false },
+    { id: 'singularity', name: 'Singularity Arena', fee: 100, prize: 200, active: false },
+  ];
+
+  let currentMatchId = null;
+
+  // ── Fetch user balance ─────────────────────
+  async function loadBalance() {
+    try {
+      const res  = await fetch('/arena/me', { credentials: 'include' });
+      const data = await res.json();
+      if (data.success) {
+        document.getElementById('coin-display').textContent =
+          `🪙 ${data.astroCoins} AstroCoins`;
+      } else if (res.status === 401) {
+        window.location.href = '/auth';
+      }
+    } catch (e) {
+      console.error('Failed to load balance', e);
+    }
+  }
+
+  // ── Render arena cards ─────────────────────
+  function renderArenas() {
+    const grid = document.getElementById('arena-grid');
+    grid.innerHTML = '';
+    ARENAS.forEach(arena => {
+      const card = document.createElement('div');
+      card.className = 'arena-card' + (arena.active ? '' : ' locked');
+
+      card.innerHTML = `
+        ${!arena.active ? '<span class="badge-locked">Coming Soon</span>' : ''}
+        <h2>${arena.name}</h2>
+        <div class="fee">Entry fee: 🪙 ${arena.fee}</div>
+        <div class="prize">Winner takes: 🪙 ${arena.prize}</div>
+        <button ${arena.active ? '' : 'disabled'} data-id="${arena.id}">
+          ${arena.active ? 'Enter Arena' : 'Locked'}
+        </button>
+      `;
+
+      if (arena.active) {
+        card.querySelector('button').addEventListener('click', () => enterArena(arena));
+      }
+
+      grid.appendChild(card);
+    });
+  }
+
+  // ── Enter arena ────────────────────────────
+  async function enterArena(arena) {
+    hideError();
+    try {
+      const res  = await fetch('/arena/enter', {
+        method:      'POST',
+        credentials: 'include',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ arenaId: arena.id }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showError(data.message);
+        return;
+      }
+
+      currentMatchId = data.matchId;
+      const inviteUrl = `${window.location.origin}/arena?join=${data.inviteToken}`;
+      openModal(arena, inviteUrl, data.alreadyOpen);
+      await loadBalance();
+    } catch (e) {
+      showError('Network error — please try again.');
+    }
+  }
+
+  // ── Cancel match ───────────────────────────
+  async function cancelMatch() {
+    if (!currentMatchId) return;
+    try {
+      const res  = await fetch('/arena/cancel', {
+        method:      'POST',
+        credentials: 'include',
+        headers:     { 'Content-Type': 'application/json' },
+        body:        JSON.stringify({ matchId: currentMatchId }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        closeModal();
+        await loadBalance();
+      } else {
+        showError(data.message);
+      }
+    } catch (e) {
+      showError('Network error — please try again.');
+    }
+  }
+
+  // ── Modal helpers ──────────────────────────
+  function openModal(arena, inviteUrl, alreadyOpen) {
+    document.getElementById('modal-title').textContent =
+      alreadyOpen ? 'Your match is still open!' : `You entered ${arena.name}!`;
+    document.getElementById('modal-msg').textContent =
+      `Fee of 🪙 ${arena.fee} ${alreadyOpen ? 'was already deducted' : 'deducted'}. ` +
+      `Send the link below to invite an opponent. Winner takes 🪙 ${arena.prize}.`;
+    document.getElementById('invite-link-input').value = inviteUrl;
+    document.getElementById('modal-overlay').classList.add('open');
+  }
+
+  function closeModal() {
+    document.getElementById('modal-overlay').classList.remove('open');
+    currentMatchId = null;
+  }
+
+  // ── Copy button ────────────────────────────
+  document.getElementById('copy-btn').addEventListener('click', () => {
+    const input = document.getElementById('invite-link-input');
+    navigator.clipboard.writeText(input.value).then(() => {
+      const btn = document.getElementById('copy-btn');
+      btn.textContent = 'Copied!';
+      setTimeout(() => btn.textContent = 'Copy', 1800);
+    });
+  });
+
+  document.getElementById('cancel-match-btn').addEventListener('click', cancelMatch);
+  document.getElementById('close-modal-btn').addEventListener('click', closeModal);
+  document.getElementById('modal-overlay').addEventListener('click', e => {
+    if (e.target === document.getElementById('modal-overlay')) closeModal();
+  });
+
+  // ── Error banner ───────────────────────────
+  function showError(msg) {
+    const el = document.getElementById('error-banner');
+    el.textContent = msg;
+    el.style.display = 'block';
+  }
+  function hideError() {
+    document.getElementById('error-banner').style.display = 'none';
+  }
+
+  // ── Init ───────────────────────────────────
+  renderArenas();
+  loadBalance();
+</script>
+</body>
+</html>

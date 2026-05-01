@@ -53,7 +53,7 @@ async function startServer() {
     app.use('/api',   createAuthRouter(usersCollection));
     app.use('/auth',  createAuthRouter(usersCollection));   // keeps /auth/refresh working
 
-    // ── Mount challenges router
+// ── Mount challenges router
     const challengesRouter = require('./challenges/challenges');
     app.use('/challenges', challengesRouter);
 
@@ -61,13 +61,19 @@ async function startServer() {
 const mathArenaRouter = require('./matharena/math-arena');
 app.use('/matharena', mathArenaRouter);
 
+
+
     // ══════════════════════════════════════════
     // API ROUTES
     // Add new feature routes below — each should
     // ideally live in its own file under /routes/
     // ══════════════════════════════════════════
 
+const path = require("path");
 
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "matharena.html"));
+});
 
     // ── GET CURRENT USER (from JWT) ──────────
     app.get('/api/me', requireAuth, (req, res) => {

@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Astrophiles | Competitive Mathematics</title>
+    
+    <!-- Fonts: DM Sans for UI, JetBrains Mono for Math/Data -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Icons: Phosphor Icons (Lightweight, technical look) -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+
+    <style>
+        /* --- USER PROVIDED VARIABLES --- */
+        :root {
+            --bg: #05080f;
+            --bg-secondary: #0c1220;
+            --fg: #e8edf5;
+            --muted: #7a8599;
+            --accent: #f3d13b;
+            --accent-dim: rgba(243, 209, 59, 0.12);
+            --accent-glow: rgba(243, 209, 59, 0.35);
+            --card: rgba(12, 18, 32, 0.75);
+            --border: rgba(122, 133, 153, 0.18);
+            --border-focus: rgba(243, 209, 59, 0.5);
+            --error: #ff4757;
+            --success: #2ed573;
+            
+            /* Spacing & Layout */
+            --container-width: 1200px;
+            --header-height: 80px;
+            --radius-sm: 4px;
+            --radius-md: 12px;
+        }
+
+        /* --- RESET & BASE --- */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        
+        body {
+            font-family: 'DM Sans', sans-serif;
+            background: var(--bg);
+            color: var(--fg);
+            line-height: 1.6;
+            overflow-x: hidden;
+            /* Deep space grid background */
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 50px 50px;
+        }
+
+        h1, h2, h3, h4 {
+            font-weight: 700;
+            letter-spacing: -0.03em;
+            line-height: 1.1;
+        }
+
+        h1 { font-size: 4rem; }
+        h2 { font-size: 2.5rem; margin-bottom: 1rem; }
+        h3 { font-size: 1.5rem; margin-bottom: 0.5rem; }
+        
+        p { color: var(--muted); margin-bottom: 1.5rem; }
+        
+        a { text-decoration: none; color: inherit; transition: 0.2s ease; }
+        ul { list-style: none; }
+
+        /* Utility: Math/Code font for numbers */
+        .math-font { font-family: 'JetBrains Mono', monospace; }
+        .text-accent { color: var(--accent); }
+        .text-muted { color: var(--muted); }
+        
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 28px;
+            font-weight: 700;
+            border-radius: var(--radius-sm);
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            gap: 8px;
+        }
+
+        .btn-primary {
+            background: var(--accent);
+            color: var(--bg);
+            box-shadow: 0 0 20px var(--accent-glow);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 0 30px var(--accent-glow);
+            background: #fff;
+        }
+
+        .btn-secondary {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            color: var(--fg);
+        }
+        .btn-secondary:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+
+        /* --- LAYOUT UTILITIES --- */
+        .container {
+            max-width: var(--container-width);
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        section { padding: 80px 0; }
+
+        /* --- BACKGROUND FX --- */
+        .stars {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: -1;
+            background: radial-gradient(circle at 50% 50%, rgba(12, 18, 32, 0.8), transparent 70%);
+        }
+
+        /* --- NAVIGATION --- */
+        .navbar {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            height: var(--header-height);
+            background: rgba(5, 8, 15, 0.85);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid var(--border);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+        }
+
+        .navbar .container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            width: 100%;
+        }
+
+        .logo {
+            font-size: 1.25rem;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--fg);
+        }
+        .logo i { color: var(--accent); font-size: 1.4rem; }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+        }
+        
+        .nav-links a {
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--muted);
+        }
+        .nav-links a:hover { color: var(--accent); }
+
+        /* --- HERO SECTION --- */
+        .hero {
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding-top: var(--header-height);
+            overflow: hidden;
+        }
+
+        /* A faint glow behind the hero text */
+        .hero::before {
+            content: '';
+            position: absolute;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, var(--accent-dim) 0%, transparent 60%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            z-index: -1;
+        }
+
+        .hero-content {
+            max-width: 800px;
+            z-index: 2;
+            animation: fadeIn 1s ease-out;
+        }
+
+        .hero-tag {
+            display: inline-block;
+            padding: 6px 16px;
+            background: rgba(243, 209, 59, 0.1);
+            color: var(--accent);
+            border: 1px solid var(--accent-dim);
+            border-radius: 100px;
+            font-size: 0.85rem;
+            font-weight: 700;
+            margin-bottom: 24px;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+        }
+
+        .hero h1 {
+            margin-bottom: 24px;
+        }
+        
+        .hero h1 span {
+            background: linear-gradient(to right, #fff, #7a8599);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero-sub {
+            font-size: 1.25rem;
+            color: var(--muted);
+            margin-bottom: 40px;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        .hero-stats {
+            display: flex;
+            justify-content: center;
+            gap: 40px;
+            margin-top: 60px;
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+        }
+        
+        .stat-item h4 {
+            font-size: 1.5rem;
+            color: var(--fg);
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .stat-item span {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            color: var(--muted);
+            letter-spacing: 0.05em;
+        }
+
+        /* --- CORE LOOP (The Process) --- */
+        .core-loop {
+            background: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .loop-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            position: relative;
+        }
+
+        .loop-card {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            position: relative;
+            transition: 0.3s;
+        }
+        .loop-card:hover {
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        .step-number {
+            position: absolute;
+            top: -12px;
+            left: 20px;
+            background: var(--accent);
+            color: var(--bg);
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            border-radius: 50%;
+            font-size: 0.8rem;
+        }
+
+        .loop-icon {
+            font-size: 2rem;
+            color: var(--accent);
+            margin-bottom: 20px;
+        }
+
+        /* Connecting arrows */
+        .arrow-connector {
+            display: none; /* Hidden on mobile */
+            position: absolute;
+            top: 50%;
+            right: -35px;
+            color: var(--border);
+            font-size: 2rem;
+            transform: translateY(-50%);
+        }
+        @media(min-width: 768px) {
+            .arrow-connector { display: block; }
+            .loop-grid .col:last-child .arrow-connector { display: none; }
+        }
+
+        /* --- FEATURE SECTIONS (Split Layout) --- */
+        .feature-row {
+            display: flex;
+            align-items: center;
+            gap: 60px;
+            margin-bottom: 100px;
+        }
+        .feature-row:last-child { margin-bottom: 0; }
+        .feature-row.reverse { flex-direction: row-reverse; }
+
+        .feature-text { flex: 1; }
+        .feature-visual { 
+            flex: 1; 
+            position: relative;
+        }
+
+        .visual-card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius-md);
+            padding: 20px;
+            backdrop-filter: blur(5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            position: relative;
+        }
+
+        /* Specific visual elements */
+        .elo-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: var(--accent-dim);
+            color: var(--accent);
+            padding: 4px 10px;
+            border-radius: 4px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.8rem;
+            margin-bottom: 15px;
+        }
+
+        /* Mock UI: Arena Card */
+        .arena-ui {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        .arena-option {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid var(--border);
+            padding: 12px 16px;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .arena-option:hover { border-color: var(--accent); background: rgba(243, 209, 59, 0.05); }
+        .arena-option.correct { border-color: var(--success); color: var(--success); }
+
+        /* Mock UI: Leaderboard Row */
+        .lb-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border);
+        }
+        .lb-row:last-child { border-bottom: none; }
+        .lb-rank { width: 30px; font-weight: 700; color: var(--muted); }
+        .lb-name { flex: 1; font-weight: 500; }
+        .lb-score { font-family: 'JetBrains Mono', monospace; color: var(--accent); }
+
+        /* --- ELO SECTION --- */
+        .elo-section {
+            text-align: center;
+            background: linear-gradient(180deg, var(--bg) 0%, var(--bg-secondary) 100%);
+        }
+
+        .ranks-container {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 40px;
+            flex-wrap: wrap;
+        }
+
+        .rank-card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid var(--border);
+            padding: 30px;
+            border-radius: var(--radius-md);
+            min-width: 200px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .rank-card.gold { border-color: rgba(243, 209, 59, 0.3); }
+        .rank-card.silver { border-color: rgba(200, 200, 200, 0.3); }
+        .rank-card.bronze { border-color: rgba(184, 115, 51, 0.3); }
+
+        .rank-circle {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            background: var(--bg);
+            border: 2px solid var(--border);
+        }
+
+        /* --- CTA SECTION --- */
+        .cta-section {
+            padding: 100px 0;
+            text-align: center;
+            position: relative;
+        }
+        .cta-box {
+            background: radial-gradient(circle at center, rgba(12, 18, 32, 0.9), #05080f);
+            border: 1px solid var(--border-focus);
+            border-radius: 20px;
+            padding: 80px 20px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .cta-box::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: conic-gradient(from 0deg, transparent 0deg, var(--accent-dim) 90deg, transparent 120deg);
+            animation: rotate 10s linear infinite;
+            z-index: 0;
+            opacity: 0.2;
+        }
+
+        .cta-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        /* --- FOOTER --- */
+        footer {
+            border-top: 1px solid var(--border);
+            padding: 40px 0;
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        /* --- ANIMATIONS --- */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes rotate {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        /* --- RESPONSIVE --- */
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            .feature-row, .feature-row.reverse { flex-direction: column; }
+            .hero-stats { flex-direction: column; gap: 20px; }
+            .loop-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Background Elements -->
+    <div class="stars"></div>
+
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">
+                <i class="ph ph-planet"></i> Astrophiles
+            </a>
+            <div class="nav-links" id="navLinks">
+                <!-- Simple JS will toggle this on mobile, but hidden by default for simplicity in this showcase -->
+                <a href="#arena">Arena</a>
+                <a href="#feed">Feed</a>
+                <a href="#leaderboard">Ranks</a>
+            </div>
+            <a href="#" class="btn btn-primary" style="padding: 8px 20px; font-size: 0.9rem;">
+                Play Now
+            </a>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container hero-content">
+            <div class="hero-tag">Global Beta Live</div>
+            <h1>where math <br><span>is competition</span></h1>
+            <p class="hero-sub">
+                Enter the Astrophiles Arena. Solve, Climb, and Claim your spot among the stars. 
+                The ultimate competitive math platform.
+            </p>
+            <div style="display: flex; gap: 16px; justify-content: center;">
+                <a href="#" class="btn btn-primary">
+                    Start Ranking <i class="ph ph-arrow-right"></i>
+                </a>
+                <a href="#how-it-works" class="btn btn-secondary">
+                    How it Works
+                </a>
+            </div>
+
+            <div class="hero-stats">
+                <div class="stat-item">
+                    <h4>142,050</h4>
+                    <span>Problems Solved</span>
+                </div>
+                <div class="stat-item">
+                    <h4>8,400</h4>
+                    <span>Active Competitors</span>
+                </div>
+                <div class="stat-item">
+                    <h4>2.4k</h4>
+                    <span>Avg. Global Elo</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- The Core Loop -->
+    <section id="how-it-works" class="core-loop">
+        <div class="container">
+            <div style="text-align: center; margin-bottom: 50px;">
+                <h3>THE ASCENSION PROTOCOL</h3>
+                <p>From novice to grandmaster in three steps.</p>
+            </div>
+            
+            <div class="loop-grid">
+                <!-- Step 1 -->
+                <div class="col">
+                    <div class="loop-card">
+                        <div class="step-number">1</div>
+                        <i class="ph ph-sword loop-icon"></i>
+                        <h3>Compete in Arena</h3>
+                        <p>Face off in ranked 1v1 math duels. Fast-paced multiple-choice combat designed to test reflex and logic.</p>
+                    </div>
+                    <i class="ph ph-caret-right arrow-connector"></i>
+                </div>
+
+                <!-- Step 2 -->
+                <div class="col">
+                    <div class="loop-card">
+                        <div class="step-number">2</div>
+                        <i class="ph ph-trend-up loop-icon"></i>
+                        <h3>Earn Elo</h3>
+                        <p>Every win increases your galactic rating. Every loss is a lesson. Your Elo is your mathematical identity.</p>
+                    </div>
+                    <i class="ph ph-caret-right arrow-connector"></i>
+                </div>
+
+                <!-- Step 3 -->
+                <div class="col">
+                    <div class="loop-card">
+                        <div class="step-number">3</div>
+                        <i class="ph ph-crown loop-icon"></i>
+                        <h3>Dominate</h3>
+                        <p>Secure your spot on the Global Leaderboard. Unlock exclusive badges and community rights.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature 1: The Arena -->
+    <section id="arena">
+        <div class="container">
+            <div class="feature-row">
+                <div class="feature-text">
+                    <div class="elo-badge"><i class="ph ph-lightning"></i> Zero Latency</div>
+                    <h2>The Math Arena</h2>
+                    <p>
+                        Forget boring quizzes. This is a battleground. We've gamified problem-solving with a robust Elo-based matchmaking system.
+                    </p>
+                    <ul style="display: flex; flex-direction: column; gap: 15px;">
+                        <li style="display: flex; gap: 10px; align-items: center;">
+                            <i class="ph ph-check-circle text-accent"></i>
+                            <span>Real-time matchmaking</span>
+                        </li>
+                        <li style="display: flex; gap: 10px; align-items: center;">
+                            <i class="ph ph-check-circle text-accent"></i>
+                            <span>Curated high-impact problems</span>
+                        </li>
+                        <li style="display: flex; gap: 10px; align-items: center;">
+                            <i class="ph ph-check-circle text-accent"></i>
+                            <span>Seasonal rewards</span>
+                        </li>
+                    </ul>
+                    <br>
+                    <a href="#" class="btn btn-secondary">Enter Queue</a>
+                </div>
+                <div class="feature-visual">
+                    <!-- Mock Arena UI -->
+                    <div class="visual-card">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 15px; border-bottom: 1px solid var(--border); padding-bottom: 10px;">
+                            <span class="math-font text-accent">Q: 04/20</span>
+                            <span class="math-font">00:12</span>
+                        </div>
+                        <h4 style="margin-bottom: 20px;">If $f(x) = x^3 - 2x + 1$, find $f'(2)$.</h4>
+                        <div class="arena-ui">
+                            <div class="arena-option">A) 8</div>
+                            <div class="arena-option correct">B) 10 <i class="ph ph-check" style="float: right;"></i></div>
+                            <div class="arena-option">C) 12</div>
+                            <div class="arena-option">D) 14</div>
+                        </div>
+                        <div style="margin-top: 15px; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px;">
+                            <div style="width: 40%; height: 100%; background: var(--accent);"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature 2: The Feed -->
+    <section id="feed">
+        <div class="container">
+            <div class="feature-row reverse">
+                <div class="feature-text">
+                    <div class="elo-badge"><i class="ph ph-users"></i> Community Driven</div>
+                    <h2>The Infinite Feed</h2>
+                    <p>
+                        The arena is for competition, but the Feed is for collaboration. Post your own problems, challenge others, and discuss solutions.
+                    </p>
+                    <p>
+                        Discover new techniques and watch the community dissect the hardest integrals and algebraic proofs.
+                    </p>
+                    <a href="#" class="btn btn-secondary">Explore Feed</a>
+                </div>
+                <div class="feature-visual">
+                    <!-- Mock Feed UI -->
+                    <div class="visual-card">
+                        <div style="display: flex; gap: 12px; margin-bottom: 15px;">
+                            <div style="width: 40px; height: 40px; background: var(--accent-dim); border-radius: 50%;"></div>
+                            <div>
+                                <div style="font-weight: 700; font-size: 0.9rem;">MathWizard_99</div>
+                                <div style="font-size: 0.8rem; color: var(--muted);">Posted 2h ago • Calculus</div>
+                            </div>
+                        </div>
+                        <p style="font-size: 0.95rem; color: var(--fg);">Can anyone solve this limit problem without L'Hopital's rule?</p>
+                        <div style="background: rgba(0,0,0,0.2); padding: 15px; border-radius: 8px; margin: 15px 0; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; color: var(--accent);">
+                            lim (x → 0) (sin x)/x
+                        </div>
+                        <div style="display: flex; gap: 20px; border-top: 1px solid var(--border); padding-top: 10px;">
+                            <span style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; color: var(--muted);"><i class="ph ph-heart"></i> 124</span>
+                            <span style="display: flex; align-items: center; gap: 5px; font-size: 0.9rem; color: var(--muted);"><i class="ph ph-chat-circle"></i> 42</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Feature 3: Leaderboard & Ranks -->
+    <section id="leaderboard" class="elo-section">
+        <div class="container">
+            <h2>The Galactic Hall of Fame</h2>
+            <p>Your skill is quantified. Your rank is immortalized.</p>
+
+            <!-- Visual representation of Ranks -->
+            <div class="ranks-container">
+                <div class="rank-card silver">
+                    <div class="rank-circle">
+                        <i class="ph ph-medal"></i>
+                    </div>
+                    <h3>Diamond</h3>
+                    <p class="math-font text-accent">2000 - 2400 Elo</p>
+                </div>
+                <div class="rank-card gold" style="transform: scale(1.1); border-color: var(--accent);">
+                    <div class="rank-circle" style="border-color: var(--accent); color: var(--accent);">
+                        <i class="ph ph-crown-simple"></i>
+                    </div>
+                    <h3>Grandmaster</h3>
+                    <p class="math-font text-accent">2400+ Elo</p>
+                </div>
+                <div class="rank-card bronze">
+                    <div class="rank-circle">
+                        <i class="ph ph-shield-star"></i>
+                    </div>
+                    <h3>Master</h3>
+                    <p class="math-font text-accent">1600 - 2000 Elo</p>
+                </div>
+            </div>
+
+            <!-- Mini Leaderboard Table -->
+            <div class="visual-card" style="max-width: 600px; margin: 60px auto 0;">
+                <div class="lb-row">
+                    <span class="lb-rank text-accent">1</span>
+                    <span class="lb-name">TensorFlower</span>
+                    <span class="lb-score">3,402</span>
+                </div>
+                <div class="lb-row">
+                    <span class="lb-rank text-accent">2</span>
+                    <span class="lb-name">Euclid_2.0</span>
+                    <span class="lb-score">3,150</span>
+                </div>
+                <div class="lb-row">
+                    <span class="lb-rank text-accent">3</span>
+                    <span class="lb-name">NullPointer</span>
+                    <span class="lb-score">2,980</span>
+                </div>
+                <div class="lb-row">
+                    <span class="lb-rank">4</span>
+                    <span class="lb-name">CalcKing</span>
+                    <span class="lb-score">2,840</span>
+                </div>
+                <div class="lb-row" style="opacity: 0.5;">
+                    <span class="lb-rank">...</span>
+                    <span class="lb-name">You</span>
+                    <span class="lb-score">1,200</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- CTA Section -->
+    <section class="cta-section">
+        <div class="container">
+            <div class="cta-box">
+                <div class="cta-content">
+                    <h2 style="font-size: 3rem; margin-bottom: 20px;">Ready to Ascend?</h2>
+                    <p style="max-width: 500px; margin: 0 auto 40px auto;">
+                        Join thousands of mathematicians competing daily. Your journey to the top of the leaderboard starts now.
+                    </p>
+                    <a href="#" class="btn btn-primary" style="padding: 16px 40px; font-size: 1.2rem;">
+                        Claim Your Coordinates
+                    </a>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px;">
+                <a href="#">About</a>
+                <a href="#">Terms</a>
+                <a href="#">Privacy</a>
+                <a href="#">Discord</a>
+            </div>
+            <p>&copy; 2023 Astrophiles Inc. Math is the language of the universe.</p>
+        </div>
+    </footer>
+
+    <!-- Minimal Scripts for Interaction -->
+    <script>
+        // Simple Smooth Scroll for Anchor Links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                document.querySelector(this.getAttribute('href')).scrollIntoView({
+                    behavior: 'smooth'
+                });
+            });
+        });
+
+        // Simple Intersection Observer for fade-in animations
+        const observerOptions = {
+            threshold: 0.1
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        // Apply fade-in logic to major sections
+        document.querySelectorAll('section h2, .feature-text, .loop-card, .rank-card').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease-out, transform 0.6s ease-out';
+            observer.observe(el);
+        });
+    </script>
+</body>
+</html>
